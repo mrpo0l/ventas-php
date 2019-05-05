@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Formulario - tecnologias</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" media="screen" href="css/main.css">
+</head>
+
+<body>
+    <div class="header-container" >
+        <img class="logo-header" src="img/logo.png" alt="">
+        <h1 class="title-header">FretSmart</h1>
+    </div>
+
+    <h3>Agregar Trabajos</h3>
+
+    <div class="container">
+        <form >
+            <label ">Titulo</label>
+            <input type="text" name="tiulo" placeholder="Titulo del Trabajo">
+
+            <label >Area</label>
+            <select name="areas">
+                <option value="0">Seleccione el Area</option>
+                <option value="1">Apps Mobiles</option>
+                <option value="2">Paginas Web</option>
+                <option value="3">Servidores</option>
+            </select>
+
+            <label >Tipo</label>
+            <select name="tipos">
+                <option value="0">Seleccione el tipo</option>
+                <option value="1">Mobiles</option>
+                <option value="2">Webs</option>
+                <option value="3">De apps</option>
+            </select>
+
+            <label >Descripcion del Trabajo</label>
+            <textarea placeholder="Describa el Trabajo realizado" style="height:200px"></textarea>
+
+            <input type="submit" value="Enviar">
+            <a style="margin-left: 100px" href="../index.html">Volver al inicio</a>
+        </form>
+    </div>
+</body>
+
+</html>
