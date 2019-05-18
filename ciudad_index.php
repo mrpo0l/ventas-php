@@ -6,7 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="description" content="">
         <meta name="author" content="">
-        <title>ELECTROSYSTEM</title>
+        <title>Ciudadades</title>
 
         <?php
         require './ver_sesion.php';
@@ -65,7 +65,7 @@
                                                    
                                                     <th class="text-center">Ciudad</th>   
                                                      
-                                                    <th class="text-center">Departamento</th>   
+                                                    <!-- <th class="text-center">Departamento</th>    -->
                                                     <th class="text-center">Acciones</th>
                                                 </tr>
                                             </thead>
@@ -75,7 +75,7 @@
                                                         <td class="text-center"><?php echo $ciudades['idciudad']; ?></td>
                                                        
                                                         <td class="text-center"><?php echo $ciudades['desc_ciudad']; ?></td>                                           
-                                                        <td class="text-center"><?php echo $ciudades['des_descripcion']; ?></td>
+                                                        <!-- <td class="text-center"><?php //echo $ciudades['des_descripcion']; ?></td> -->
                                                         <td class="text-center">
                                                             <a href="ciudad_editar.php?vcod=<?php echo $ciudades['idciudad']; ?>" 
                                                                class="btn btn-xs btn-primary" rel='tooltip' data-title="Editar">

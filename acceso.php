@@ -1,7 +1,7 @@
 <?php
 require 'clases/conexion.php';//llamar a la conexion
 
-$sql="select * from usuarios where usu_nick='".
+$sql="select * from v_usuarios where usu_nick='".
         $_REQUEST['usuario']."' "
      . " and usu_clave = '".$_REQUEST['pass']."'";
 //realiza el recurrido de la consulta
@@ -26,7 +26,6 @@ if ($resultado[0]['usu_cod'] == NULL) {
     $_SESSION['gru_cod'] = $resultado[0]['gru_cod'];
     $_SESSION['grupo'] = $resultado[0]['gru_nombre'];
     $_SESSION['cod_suc'] = $resultado[0]['cod_suc'];
-    //header('location:./sistema');//direccionar al menu principal
     header('location:menu.php');//direccionar al menu principal
 }
 ?>

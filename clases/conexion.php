@@ -5,7 +5,7 @@ class Conectar //DECLARAMOS LA CLASE Conectar
 	{
             //DECLARAMOS LA VARIABLE QUE VA A CONTENER NUESTRA CADENA DE CONEXION
             $cadena = "host = 'localhost' port = '5432' dbname = 'ventas_db' "
-                    . "user = 'postgres' password = '12345678'";
+                    . "user = 'postgres' password = '123456789'";
             //EJECUTAMOS LA CONEXION Y GUARDAMOS EN LA VARIABLE $con
             $con = pg_connect($cadena) or die ("Error de conexion. ".pg_last_error());
             

@@ -6,8 +6,7 @@ session_start();
 
 $sql = "SELECT sp_ciudad(" . $_REQUEST['accion'] . ","
         . $_REQUEST['vcod'] . ",'" 
-		. $_REQUEST['vnombre'] . "'," .
-        $_REQUEST['vdepar']. ") as ciudad;";
+		. $_REQUEST['vnombre'] . "') as ciudad;";
 $resultado = consultas::get_datos($sql);
 
 

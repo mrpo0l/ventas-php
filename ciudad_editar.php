@@ -49,29 +49,7 @@
                                     </div>
                                 </div>
                                 
-                                <div class="form-group">
-                                    <label class="col-md-2 control-label">Departamento</label>
-                                    <div class="col-md-3">
-                                        <?php
-                                        $departamentos = consultas::get_datos("select * from departamento "
-                              . "order by id_departamento=".$ciudad[0]['iddepartamento']." desc");
-                                        ?>                                 
-                                        <select name="vdepar" class="form-control select2">
-                                            <?php
-                                            if (!empty($departamentos)) {
-                                                foreach ($departamentos as $departamento) {
-                                                    ?>
-                                                    <option value="<?php echo $departamento['id_departamento']; ?>">
-                                                        <?php echo $departamento['des_descripcion']; ?></option>
-                                                    <?php
-                                                }
-                                            } else {
-                                                ?>
-                                                <option value="0">Debe insertar un departamento</option>
-                                            <?php } ?>
-                                        </select>
-                                    </div>
-                                </div>
+                               
 
                                 <br>
                                 <div class="form-group">
