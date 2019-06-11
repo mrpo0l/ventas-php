@@ -7,6 +7,7 @@ session_start();
 $sql = "SELECT sp_cliente(" . $_REQUEST['accion'] . ","
         . $_REQUEST['vcod'] . ",'" 
         . $_REQUEST['nombre'] . "','" 
+        . $_REQUEST['fecha_nac'] . "','" 
         . $_REQUEST['apellido'] . "'," 
         . $_REQUEST['idciudad'] . ",'" 
         . $_REQUEST['direccion'] . "'," 

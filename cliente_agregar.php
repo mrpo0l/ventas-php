@@ -58,6 +58,15 @@
                                 </div>
 
                                 <div class="form-group">
+                                    <label class="col-md-2 control-label">Fecha de Nacimiento</label>
+                                    <div class="col-md-5">
+                                        <input type="date" required="" placeholder="Ingrese la fecha"  
+                                               class="form-control" name="fecha_nac" id="nom"
+                                               >
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
                                     <label class="col-md-2 control-label">Ciudad</label>
                                     <div class="col-md-3">
                                         <?php

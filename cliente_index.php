@@ -68,6 +68,7 @@
                                             <th class="text-center">#</th>
                                             <th class="text-center">Apellido</th>
                                             <th class="text-center">Nombre</th>
+                                            <th class="text-center">Fecha Nac</th>
                                             <th class="text-center">Ciudad</th>
                                             <th class="text-center">Documento</th>
                                             <th class="text-center">Edad</th>
@@ -80,6 +81,7 @@
                                             <td class="text-center"><?php echo $clientes['cod_cliente']; ?></td>
                                             <td class="text-center"><?php echo $clientes['apellido']; ?></td>
                                             <td class="text-center"><?php echo $clientes['nombre']; ?></td>
+                                            <td class="text-center"><?php echo $clientes['fecha_nac']; ?></td>
                                             <td class="text-center"><?php echo $clientes['desc_ciudad']; ?></td>
                                             <td class="text-center"><?php echo $clientes['documento']; ?></td>
                                             <td class="text-center"><?php echo $clientes['edad']; ?></td>

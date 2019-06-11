@@ -49,6 +49,15 @@
                                 </div>
 
                                 <div class="form-group">
+                                    <label class="col-md-2 control-label">Fecha de Nacimiento</label>
+                                    <div class="col-md-5">
+                                        <input type="date" required="" placeholder="Ingrese la fecha"  
+                                               class="form-control" name="fecha_nac" value="<?php echo $cliente[0]['fecha_nac']; ?>"
+                                               >
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
                                     <label class="col-md-2 control-label">Apellido</label>
                                     <div class="col-md-5">
                                         <input type="text" required="" placeholder="Ingrese el Apellido"  
