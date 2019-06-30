@@ -5,7 +5,7 @@
 -- Dumped from database version 10.8
 -- Dumped by pg_dump version 11.1
 
--- Started on 2019-06-11 19:59:21
+-- Started on 2019-06-29 20:48:39
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -18,7 +18,7 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- TOC entry 231 (class 1255 OID 16394)
+-- TOC entry 238 (class 1255 OID 16394)
 -- Name: sp_ciudad(integer, integer, character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -78,7 +78,7 @@ $$;
 ALTER FUNCTION public.sp_ciudad(ban integer, vcod integer, pagina character varying) OWNER TO postgres;
 
 --
--- TOC entry 233 (class 1255 OID 24661)
+-- TOC entry 241 (class 1255 OID 24661)
 -- Name: sp_cliente(integer, integer, character varying, character varying, character varying, integer, character varying, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -150,7 +150,7 @@ $$;
 ALTER FUNCTION public.sp_cliente(ban integer, vcod integer, vnombre character varying, vfecha_nac character varying, vapellido character varying, vidciudad integer, vdireccion character varying, vedad integer, vdocumento integer) OWNER TO postgres;
 
 --
--- TOC entry 234 (class 1255 OID 24670)
+-- TOC entry 242 (class 1255 OID 24670)
 -- Name: sp_departamentos(integer, integer, character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -212,7 +212,210 @@ $$;
 ALTER FUNCTION public.sp_departamentos(ban integer, vcod integer, vdescripcion character varying) OWNER TO postgres;
 
 --
--- TOC entry 232 (class 1255 OID 24605)
+-- TOC entry 243 (class 1255 OID 24684)
+-- Name: sp_marca(integer, integer, character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_marca(ban integer, vcod integer, vnombre character varying) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $$
+declare mensaje varchar;
+repetido integer;
+
+begin
+
+case ban
+when 1 then
+
+	select cod_marca into repetido from marca where cod_marca = vcod;
+
+		if found then
+		
+			mensaje = 'El codigo de marca  <strong>'||vcod||'</strong> ya esta registrado';
+		else
+			INSERT INTO marca
+			    VALUES ((select coalesce(max(cod_marca),0)+1 from marca)
+			    ,vnombre);
+
+			mensaje = 'Guardado Exitosamente';
+		end if;
+when 2 then
+		select cod_marca into repetido from marca where nombre=vnombre and cod_marca = vcod ;
+
+		if found then
+
+			mensaje = 'El nombre de la marca  <strong>'||pagina||'</strong> ya esta registrado';
+
+		else
+			UPDATE marca
+			SET cod_marca = vcod ,
+			nombre = vnombre			
+			
+			WHERE cod_marca=vcod;
+			
+			mensaje = 'Modificado Exitosamente';
+
+
+		end if;
+when 3 then
+    if (SELECT COUNT(*) FROM producto where cod_marca = vcod) > 0 then
+    	mensaje = 'La marca que desea eliminar esta siendo usada';
+    else
+      	delete from marca
+	WHERE cod_marca=vcod;
+		mensaje = 'Borrado Exitosamente';
+    end if;
+end case;
+return mensaje;
+end;
+$$;
+
+
+ALTER FUNCTION public.sp_marca(ban integer, vcod integer, vnombre character varying) OWNER TO postgres;
+
+--
+-- TOC entry 244 (class 1255 OID 24702)
+-- Name: sp_producto(integer, integer, character varying, character varying, integer, integer, integer, numeric, numeric); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_producto(ban integer, vidproducto integer, vdesc_producto character varying, vestado character varying, vcod_tipo_producto integer, vcod_tipo_impuesto integer, vcod_marca integer, vprecio numeric, vstock numeric) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $$
+ declare mensaje varchar;
+repetido integer;
+
+begin
+
+case ban
+when 1 then
+
+	select nombre into repetido from producto where cod_producto = vidproducto;
+
+		if found then
+		
+			mensaje = 'El producto  <strong>'||repetido||'</strong> ya esta registrado';
+		else
+			INSERT INTO producto
+			    VALUES ((select coalesce(max(cod_producto),0)+1 from producto),
+			  vdesc_producto,
+              vcod_marca,
+              vcod_tipo_impuesto,
+              vcod_tipo_producto,
+			  vprecio,
+			  vstock,
+              vestado);
+
+			mensaje = 'Guardado Exitosamente';
+		end if;
+when 2 then
+		--select idproducto into repetido from producto where desc_producto=vdesc_producto and 
+		--idproducto = vidproducto and 
+		--estado=vestado and 
+		--cod_tipo_producto=vcod_tipo_producto and 
+		--cod_tipo_impuesto=vcod_tipo_impuesto and 
+		--cod_marca=vcod_marca and 
+		--precio=vprecio and 
+		--stock=vstock;
+
+		if found then
+
+			mensaje = 'El producto  <strong>'||vdesc_producto||'</strong> ya esta registrado';
+
+		else
+			UPDATE producto
+			SET cod_producto = vidproducto ,
+			nombre = vdesc_producto ,
+			estado=vestado,
+			cod_tipo_producto=vcod_tipo_producto,
+			cod_impuesto=vcod_tipo_impuesto,
+			cod_marca=vcod_marca,
+			precio=vprecio,
+			stock=vstock
+						
+			WHERE cod_producto=vidproducto;
+			
+			mensaje = 'Modificado Exitosamente';
+
+		end if;
+when 3 then
+	delete from producto
+	WHERE cod_producto=vidproducto;
+
+mensaje = 'Borrado Exitosamente';	
+end case;
+return mensaje;
+end;
+$$;
+
+
+ALTER FUNCTION public.sp_producto(ban integer, vidproducto integer, vdesc_producto character varying, vestado character varying, vcod_tipo_producto integer, vcod_tipo_impuesto integer, vcod_marca integer, vprecio numeric, vstock numeric) OWNER TO postgres;
+
+--
+-- TOC entry 245 (class 1255 OID 24732)
+-- Name: sp_sucursal(integer, integer, character varying, character varying, integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_sucursal(ban integer, vcod integer, vnombre character varying, vdireccion character varying, vtelefono integer) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $$ declare mensaje varchar;
+repetido integer;
+
+begin
+
+case ban
+when 1 then
+
+	select cod_sucursal into repetido from sucursal where cod_sucursal = vcod;
+
+		if found then
+		
+			mensaje = 'El codigo de ciudad  <strong>'||vcod||'</strong> ya esta registrado';
+		else
+			INSERT INTO sucursal
+			    VALUES ((select coalesce(max(cod_sucursal),0)+1 from sucursal)
+			    ,vnombre,
+                vdireccion,
+                vtelefono);
+
+			mensaje = 'Guardado Exitosamente';
+		end if;
+when 2 then
+		select cod_sucursal into repetido from sucursal where suc_nombre=vnombre and cod_sucursal = vcod;
+
+		if found then
+
+			mensaje = 'El nombre de la ciudad  <strong>'||vnombre||'</strong> ya esta registrado';
+
+		else
+			UPDATE sucursal
+			SET cod_sucursal = vcod ,
+			suc_nombre = vnombre,
+            suc_direccion = vdireccion,
+            suc_tel = vtelefono
+			
+			
+			
+			WHERE cod_sucursal=vcod;
+			
+			mensaje = 'Modificado Exitosamente';
+
+		end if;
+when 3 then
+	delete from sucursal
+	WHERE cod_sucursal=vcod;
+
+mensaje = 'Borrado Exitosamente';	
+end case;
+return mensaje;
+end;
+
+$$;
+
+
+ALTER FUNCTION public.sp_sucursal(ban integer, vcod integer, vnombre character varying, vdireccion character varying, vtelefono integer) OWNER TO postgres;
+
+--
+-- TOC entry 239 (class 1255 OID 24605)
 -- Name: sp_tipo_comprobante(integer, integer, character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -261,7 +464,7 @@ when 2 then
 		end if;
 when 3 then
 	SELECT COUNT(*) INTO existe FROM venta_cabecera where cod_tipo_comprobante = vcod;
-    if found then
+    if existe > 0 then
     	mensaje = 'El tipo de comprobante que desea eliminar esta siendo usada';
     else
       	delete from tipo_comprobante
@@ -275,6 +478,251 @@ $$;
 
 
 ALTER FUNCTION public.sp_tipo_comprobante(ban integer, vcod integer, nombre character varying) OWNER TO postgres;
+
+--
+-- TOC entry 240 (class 1255 OID 24736)
+-- Name: sp_tipo_impuesto(integer, integer, character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_tipo_impuesto(ban integer, vcod integer, vnombre character varying) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $$
+ declare mensaje varchar;
+repetido integer;
+
+begin
+
+case ban
+when 1 then
+
+	select cod_impuesto into repetido from tipo_impuestos where cod_impuesto = vcod;
+
+		if found then
+		
+			mensaje = 'El codigo del tipo impuesto  <strong>'||vcod||'</strong> ya esta registrado';
+		else
+			INSERT INTO tipo_impuestos
+			    VALUES ((select coalesce(max(cod_impuesto),0)+1 from tipo_impuestos)
+			    ,vnombre);
+
+			mensaje = 'Guardado Exitosamente';
+		end if;
+when 2 then
+		select cod_impuesto into repetido from tipo_impuestos where nombre=vnombre and cod_impuesto = vcod;
+
+		if found then
+
+			mensaje = 'El nombre del tipo de impuesto  <strong>'||vnombre||'</strong> ya esta registrado';
+
+		else
+			UPDATE tipo_impuestos
+			SET cod_tipo_impuesto = vcod ,
+			desc_tipo_impuesto = vnombre 
+						
+			
+			WHERE cod_tipo_impuesto= vcod ;
+			
+			mensaje = 'Modificado Exitosamente';
+
+		end if;
+when 3 then
+	delete from tipo_impuestos
+	WHERE cod_impuesto = vcod;
+
+mensaje = 'Borrado Exitosamente';	
+end case;
+return mensaje;
+end;
+$$;
+
+
+ALTER FUNCTION public.sp_tipo_impuesto(ban integer, vcod integer, vnombre character varying) OWNER TO postgres;
+
+--
+-- TOC entry 248 (class 1255 OID 24738)
+-- Name: sp_tipo_impuesto(integer, integer, character varying, integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_tipo_impuesto(ban integer, vcod integer, vnombre character varying, vporcentaje integer) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $$
+ declare mensaje varchar;
+repetido integer;
+
+begin
+
+case ban
+when 1 then
+
+	select cod_impuesto into repetido from tipo_impuestos where cod_impuesto = vcod;
+
+		if found then
+		
+			mensaje = 'El codigo del tipo impuesto  <strong>'||vcod||'</strong> ya esta registrado';
+		else
+			INSERT INTO tipo_impuestos
+			    VALUES ((select coalesce(max(cod_impuesto),0)+1 from tipo_impuestos)
+			    ,vnombre,
+                vporcentaje);
+
+			mensaje = 'Guardado Exitosamente';
+		end if;
+when 2 then
+		select cod_impuesto into repetido from tipo_impuestos where nombre=vnombre and cod_impuesto = vcod;
+
+		if found then
+
+			mensaje = 'El nombre del tipo de impuesto  <strong>'||vnombre||'</strong> ya esta registrado';
+
+		else
+			UPDATE tipo_impuestos
+			SET cod_impuesto = vcod ,
+			nombre = vnombre,
+            porcentaje = vporcentaje
+						
+			
+			WHERE cod_impuesto= vcod ;
+			
+			mensaje = 'Modificado Exitosamente';
+
+		end if;
+when 3 then
+	delete from tipo_impuestos
+	WHERE cod_impuesto = vcod;
+
+mensaje = 'Borrado Exitosamente';	
+end case;
+return mensaje;
+end;
+$$;
+
+
+ALTER FUNCTION public.sp_tipo_impuesto(ban integer, vcod integer, vnombre character varying, vporcentaje integer) OWNER TO postgres;
+
+--
+-- TOC entry 247 (class 1255 OID 24737)
+-- Name: sp_tipo_impuesto(integer, integer, character varying, character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_tipo_impuesto(ban integer, vcod integer, vnombre character varying, vporcentaje character varying) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $$
+ declare mensaje varchar;
+repetido integer;
+
+begin
+
+case ban
+when 1 then
+
+	select cod_impuesto into repetido from tipo_impuestos where cod_impuesto = vcod;
+
+		if found then
+		
+			mensaje = 'El codigo del tipo impuesto  <strong>'||vcod||'</strong> ya esta registrado';
+		else
+			INSERT INTO tipo_impuestos
+			    VALUES ((select coalesce(max(cod_impuesto),0)+1 from tipo_impuestos)
+			    ,vnombre,
+                vporcentaje);
+
+			mensaje = 'Guardado Exitosamente';
+		end if;
+when 2 then
+		select cod_impuesto into repetido from tipo_impuestos where nombre=vnombre and cod_impuesto = vcod;
+
+		if found then
+
+			mensaje = 'El nombre del tipo de impuesto  <strong>'||vnombre||'</strong> ya esta registrado';
+
+		else
+			UPDATE tipo_impuestos
+			SET cod_impuesto = vcod ,
+			nombre = vnombre,
+            porcentaje = vporcentaje
+						
+			
+			WHERE cod_impuesto= vcod ;
+			
+			mensaje = 'Modificado Exitosamente';
+
+		end if;
+when 3 then
+	delete from tipo_impuestos
+	WHERE cod_impuesto = vcod;
+
+mensaje = 'Borrado Exitosamente';	
+end case;
+return mensaje;
+end;
+$$;
+
+
+ALTER FUNCTION public.sp_tipo_impuesto(ban integer, vcod integer, vnombre character varying, vporcentaje character varying) OWNER TO postgres;
+
+--
+-- TOC entry 246 (class 1255 OID 24733)
+-- Name: sp_tipo_producto(integer, integer, character varying); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_tipo_producto(ban integer, vcod integer, vnombre character varying) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $$
+ declare mensaje varchar;
+repetido integer;
+
+begin
+
+case ban
+when 1 then
+
+	select cod_tipo_producto into repetido from tipo_producto where cod_tipo_producto = vcod;
+
+		if found then
+		
+			mensaje = 'El codigo del tipo de producto  <strong>'||vcod||'</strong> ya esta registrado';
+		else
+			INSERT INTO tipo_producto
+			    VALUES ((select coalesce(max(cod_tipo_producto),0)+1 from tipo_producto)
+			    ,vnombre);
+
+			mensaje = 'Guardado Exitosamente';
+		end if;
+when 2 then
+		select cod_tipo_producto into repetido from tipo_producto where nombre=vnombre and cod_tipo_producto = vcod;
+
+		if found then
+
+			mensaje = 'El nombre de la tipo_producto  <strong>'||vnombre||'</strong> ya esta registrado';
+
+		else
+			UPDATE tipo_producto
+			SET cod_tipo_producto = vcod ,
+			nombre = vnombre 
+						
+			
+			WHERE cod_tipo_producto= vcod ;
+			
+			mensaje = 'Modificado Exitosamente';
+
+		end if;
+when 3 then
+	
+    
+    if (SELECT COUNT(*) FROM tipo_producto where cod_tipo_producto = vcod) > 0 then
+    	mensaje = 'El tipo de producto que desea eliminar esta siendo usada';
+    else
+      	delete from tipo_producto
+		WHERE cod_tipo_producto = vcod;
+		mensaje = 'Borrado Exitosamente';
+    end if;	
+end case;
+return mensaje;
+end;
+$$;
+
+
+ALTER FUNCTION public.sp_tipo_producto(ban integer, vcod integer, vnombre character varying) OWNER TO postgres;
 
 SET default_tablespace = '';
 
@@ -326,6 +774,18 @@ CREATE TABLE public.departamentos (
 ALTER TABLE public.departamentos OWNER TO postgres;
 
 --
+-- TOC entry 220 (class 1259 OID 24678)
+-- Name: existe; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.existe (
+    count bigint
+);
+
+
+ALTER TABLE public.existe OWNER TO postgres;
+
+--
 -- TOC entry 198 (class 1259 OID 16402)
 -- Name: marca; Type: TABLE; Schema: public; Owner: postgres
 --
@@ -337,6 +797,18 @@ CREATE TABLE public.marca (
 
 
 ALTER TABLE public.marca OWNER TO postgres;
+
+--
+-- TOC entry 221 (class 1259 OID 24681)
+-- Name: marcasenuso; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.marcasenuso (
+    count bigint
+);
+
+
+ALTER TABLE public.marcasenuso OWNER TO postgres;
 
 --
 -- TOC entry 199 (class 1259 OID 16405)
@@ -403,14 +875,13 @@ ALTER TABLE public.permisos OWNER TO postgres;
 
 CREATE TABLE public.producto (
     cod_producto integer NOT NULL,
-    nombre "char" NOT NULL,
+    nombre character(50) NOT NULL,
     cod_marca integer NOT NULL,
     cod_impuesto integer NOT NULL,
     cod_tipo_producto integer NOT NULL,
-    descripcion character varying(100) NOT NULL,
     precio numeric(10,2) NOT NULL,
     stock integer NOT NULL,
-    estado boolean NOT NULL
+    estado character(10) NOT NULL
 );
 
 
@@ -538,6 +1009,19 @@ CREATE VIEW public.v_cliente AS
 ALTER TABLE public.v_cliente OWNER TO postgres;
 
 --
+-- TOC entry 219 (class 1259 OID 24672)
+-- Name: v_marca; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.v_marca AS
+ SELECT a.cod_marca,
+    a.nombre
+   FROM public.marca a;
+
+
+ALTER TABLE public.v_marca OWNER TO postgres;
+
+--
 -- TOC entry 211 (class 1259 OID 16449)
 -- Name: v_permisos; Type: VIEW; Schema: public; Owner: postgres
 --
@@ -561,6 +1045,74 @@ CREATE VIEW public.v_permisos AS
 
 
 ALTER TABLE public.v_permisos OWNER TO postgres;
+
+--
+-- TOC entry 224 (class 1259 OID 24722)
+-- Name: v_producto; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.v_producto AS
+ SELECT a.cod_producto AS idproducto,
+    a.nombre AS desc_producto,
+    a.estado,
+    a.cod_tipo_producto,
+    a.cod_impuesto AS cod_tipo_impuesto,
+    a.cod_marca,
+    a.precio,
+    a.stock,
+    b.nombre AS desc_tipo_producto,
+    c.nombre AS desc_tipo_impuesto,
+    c.porcentaje AS valor_tipo_impuesto,
+    d.nombre AS desc_marca
+   FROM (((public.producto a
+     JOIN public.tipo_producto b ON ((a.cod_tipo_producto = b.cod_tipo_producto)))
+     JOIN public.tipo_impuestos c ON ((a.cod_impuesto = c.cod_impuesto)))
+     JOIN public.marca d ON ((a.cod_marca = d.cod_marca)));
+
+
+ALTER TABLE public.v_producto OWNER TO postgres;
+
+--
+-- TOC entry 225 (class 1259 OID 24727)
+-- Name: v_sucursal; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.v_sucursal WITH (security_barrier='false') AS
+ SELECT a.cod_sucursal,
+    a.suc_nombre,
+    a.suc_direccion,
+    a.suc_tel
+   FROM public.sucursal a;
+
+
+ALTER TABLE public.v_sucursal OWNER TO postgres;
+
+--
+-- TOC entry 223 (class 1259 OID 24696)
+-- Name: v_tipo_impuesto; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.v_tipo_impuesto AS
+ SELECT a.cod_impuesto AS cod_tipo_impuesto,
+    a.nombre AS desc_tipo_impuesto,
+    a.porcentaje AS valor_tipo_impuesto
+   FROM public.tipo_impuestos a;
+
+
+ALTER TABLE public.v_tipo_impuesto OWNER TO postgres;
+
+--
+-- TOC entry 222 (class 1259 OID 24692)
+-- Name: v_tipo_producto; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.v_tipo_producto AS
+ SELECT a.cod_tipo_producto,
+    a.nombre AS desc_tipo_producto
+   FROM public.tipo_producto a;
+
+
+ALTER TABLE public.v_tipo_producto OWNER TO postgres;
 
 --
 -- TOC entry 216 (class 1259 OID 24601)
@@ -645,7 +1197,7 @@ CREATE VIEW public.vfecha AS
 ALTER TABLE public.vfecha OWNER TO postgres;
 
 --
--- TOC entry 2948 (class 0 OID 16396)
+-- TOC entry 2988 (class 0 OID 16396)
 -- Dependencies: 196
 -- Data for Name: ciudad; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -660,7 +1212,7 @@ INSERT INTO public.ciudad VALUES (9, 'San Lorenzo');
 
 
 --
--- TOC entry 2949 (class 0 OID 16399)
+-- TOC entry 2989 (class 0 OID 16399)
 -- Dependencies: 197
 -- Data for Name: cliente; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -671,29 +1223,51 @@ INSERT INTO public.cliente VALUES (3, 'Daft                                     
 
 
 --
--- TOC entry 2964 (class 0 OID 24665)
+-- TOC entry 3004 (class 0 OID 24665)
 -- Dependencies: 218
 -- Data for Name: departamentos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.departamentos VALUES (3, 'Paraguari');
 INSERT INTO public.departamentos VALUES (5, 'Canindeyu');
 INSERT INTO public.departamentos VALUES (6, 'prueba');
 INSERT INTO public.departamentos VALUES (4, 'Central');
 INSERT INTO public.departamentos VALUES (7, 'Prueba 2');
+INSERT INTO public.departamentos VALUES (3, 'Paraguari123');
 
 
 --
--- TOC entry 2950 (class 0 OID 16402)
+-- TOC entry 3005 (class 0 OID 24678)
+-- Dependencies: 220
+-- Data for Name: existe; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.existe VALUES (2);
+
+
+--
+-- TOC entry 2990 (class 0 OID 16402)
 -- Dependencies: 198
 -- Data for Name: marca; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 INSERT INTO public.marca VALUES (1, 'Apple');
+INSERT INTO public.marca VALUES (2, 'Xiaomi');
+INSERT INTO public.marca VALUES (3, 'Oppo');
+INSERT INTO public.marca VALUES (5, 'Nokia');
+INSERT INTO public.marca VALUES (4, 'Sony');
 
 
 --
--- TOC entry 2951 (class 0 OID 16405)
+-- TOC entry 3006 (class 0 OID 24681)
+-- Dependencies: 221
+-- Data for Name: marcasenuso; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.marcasenuso VALUES (2);
+
+
+--
+-- TOC entry 2991 (class 0 OID 16405)
 -- Dependencies: 199
 -- Data for Name: modulo; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -703,7 +1277,7 @@ INSERT INTO public.modulo VALUES (2, 'Venta                                     
 
 
 --
--- TOC entry 2952 (class 0 OID 16408)
+-- TOC entry 2992 (class 0 OID 16408)
 -- Dependencies: 200
 -- Data for Name: paginas; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -713,10 +1287,15 @@ INSERT INTO public.paginas VALUES (2, 'cliente_index.php', 'Clientes', 1);
 INSERT INTO public.paginas VALUES (3, 'venta_index.php', 'Ventas', 2);
 INSERT INTO public.paginas VALUES (4, 'tipo_comprobante_index.php', 'Tipos Comprobantes', 1);
 INSERT INTO public.paginas VALUES (5, 'departamentos_index.php', 'Departamentos', 1);
+INSERT INTO public.paginas VALUES (6, 'marca_index.php', 'Marcas', 1);
+INSERT INTO public.paginas VALUES (7, 'producto_index.php', 'Productos', 1);
+INSERT INTO public.paginas VALUES (9, 'tipo_impuesto_index.php', 'Tpos Inpuestos', 1);
+INSERT INTO public.paginas VALUES (10, 'tipo_producto_index.php', 'Tipo Productos', 1);
+INSERT INTO public.paginas VALUES (8, 'sucursal_index.php', 'Sucursales', 1);
 
 
 --
--- TOC entry 2953 (class 0 OID 16414)
+-- TOC entry 2993 (class 0 OID 16414)
 -- Dependencies: 201
 -- Data for Name: perfil; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -725,7 +1304,7 @@ INSERT INTO public.perfil VALUES (1, 'admin');
 
 
 --
--- TOC entry 2954 (class 0 OID 16417)
+-- TOC entry 2994 (class 0 OID 16417)
 -- Dependencies: 202
 -- Data for Name: permisos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -735,20 +1314,26 @@ INSERT INTO public.permisos VALUES (2, true, true, true, true, 1);
 INSERT INTO public.permisos VALUES (3, true, true, true, true, 1);
 INSERT INTO public.permisos VALUES (4, true, true, true, true, 1);
 INSERT INTO public.permisos VALUES (5, true, true, true, true, 1);
+INSERT INTO public.permisos VALUES (6, true, true, true, true, 1);
+INSERT INTO public.permisos VALUES (7, true, true, true, true, 1);
+INSERT INTO public.permisos VALUES (8, true, true, true, true, 1);
+INSERT INTO public.permisos VALUES (9, true, true, true, true, 1);
+INSERT INTO public.permisos VALUES (10, true, true, true, true, 1);
 
 
 --
--- TOC entry 2955 (class 0 OID 16420)
+-- TOC entry 2995 (class 0 OID 16420)
 -- Dependencies: 203
 -- Data for Name: producto; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.producto VALUES (1, 'I', 1, 1, 1, '8 ram, 64 gb', 3000000.00, 13, true);
-INSERT INTO public.producto VALUES (2, 'I', 1, 1, 1, '3 ram, 128gb', 5000000.00, 12, true);
+INSERT INTO public.producto VALUES (4, 'Redmi note 7 pro                                  ', 1, 2, 1, 30.00, 1700000, 'nuevo     ');
+INSERT INTO public.producto VALUES (1, 'Iphone 7                                          ', 1, 2, 1, 13.00, 3000000, 'true      ');
+INSERT INTO public.producto VALUES (2, 'Iphone X                                          ', 1, 2, 1, 12.00, 5000000, 'true      ');
 
 
 --
--- TOC entry 2956 (class 0 OID 16423)
+-- TOC entry 2996 (class 0 OID 16423)
 -- Dependencies: 204
 -- Data for Name: repetido; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -757,7 +1342,7 @@ INSERT INTO public.repetido VALUES (1);
 
 
 --
--- TOC entry 2957 (class 0 OID 16426)
+-- TOC entry 2997 (class 0 OID 16426)
 -- Dependencies: 205
 -- Data for Name: sucursal; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -769,18 +1354,17 @@ Paraguay
 
 
 --
--- TOC entry 2958 (class 0 OID 16429)
+-- TOC entry 2998 (class 0 OID 16429)
 -- Dependencies: 206
 -- Data for Name: tipo_comprobante; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.tipo_comprobante VALUES (3, 'Nota de credito               ');
-INSERT INTO public.tipo_comprobante VALUES (2, 'Ticket                        ');
 INSERT INTO public.tipo_comprobante VALUES (1, 'Factura                       ');
+INSERT INTO public.tipo_comprobante VALUES (2, 'Ticket                        ');
 
 
 --
--- TOC entry 2959 (class 0 OID 16432)
+-- TOC entry 2999 (class 0 OID 16432)
 -- Dependencies: 207
 -- Data for Name: tipo_impuestos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -790,16 +1374,17 @@ INSERT INTO public.tipo_impuestos VALUES (1, 'Iva 5%', 5);
 
 
 --
--- TOC entry 2960 (class 0 OID 16435)
+-- TOC entry 3000 (class 0 OID 16435)
 -- Dependencies: 208
 -- Data for Name: tipo_producto; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
+INSERT INTO public.tipo_producto VALUES (2, 'Notebook');
 INSERT INTO public.tipo_producto VALUES (1, 'celulares');
 
 
 --
--- TOC entry 2961 (class 0 OID 16438)
+-- TOC entry 3001 (class 0 OID 16438)
 -- Dependencies: 209
 -- Data for Name: usuarios; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -809,7 +1394,7 @@ INSERT INTO public.usuarios VALUES (1, 'juanda              ', 1, 'Juan Fretes
 
 
 --
--- TOC entry 2962 (class 0 OID 16458)
+-- TOC entry 3002 (class 0 OID 16458)
 -- Dependencies: 213
 -- Data for Name: venta_cabecera; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -819,7 +1404,7 @@ INSERT INTO public.venta_cabecera VALUES (2, 2, 2, '2019-05-23', 'Shoping asa', 
 
 
 --
--- TOC entry 2963 (class 0 OID 16461)
+-- TOC entry 3003 (class 0 OID 16461)
 -- Dependencies: 214
 -- Data for Name: venta_detalles; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -830,7 +1415,7 @@ INSERT INTO public.venta_detalles VALUES (3, 2, 1, 4);
 
 
 --
--- TOC entry 2762 (class 2606 OID 16469)
+-- TOC entry 2797 (class 2606 OID 16469)
 -- Name: ciudad ciudad_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -839,7 +1424,7 @@ ALTER TABLE ONLY public.ciudad
 
 
 --
--- TOC entry 2764 (class 2606 OID 16471)
+-- TOC entry 2799 (class 2606 OID 16471)
 -- Name: cliente cliente_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -848,7 +1433,7 @@ ALTER TABLE ONLY public.cliente
 
 
 --
--- TOC entry 2805 (class 2606 OID 24669)
+-- TOC entry 2840 (class 2606 OID 24669)
 -- Name: departamentos departamentos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -857,7 +1442,7 @@ ALTER TABLE ONLY public.departamentos
 
 
 --
--- TOC entry 2767 (class 2606 OID 16473)
+-- TOC entry 2802 (class 2606 OID 16473)
 -- Name: marca marca_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -866,7 +1451,7 @@ ALTER TABLE ONLY public.marca
 
 
 --
--- TOC entry 2769 (class 2606 OID 16475)
+-- TOC entry 2804 (class 2606 OID 16475)
 -- Name: modulo modulo_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -875,7 +1460,7 @@ ALTER TABLE ONLY public.modulo
 
 
 --
--- TOC entry 2772 (class 2606 OID 16477)
+-- TOC entry 2807 (class 2606 OID 16477)
 -- Name: paginas paginas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -884,7 +1469,7 @@ ALTER TABLE ONLY public.paginas
 
 
 --
--- TOC entry 2774 (class 2606 OID 16479)
+-- TOC entry 2809 (class 2606 OID 16479)
 -- Name: perfil perfil_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -893,7 +1478,7 @@ ALTER TABLE ONLY public.perfil
 
 
 --
--- TOC entry 2776 (class 2606 OID 16481)
+-- TOC entry 2811 (class 2606 OID 16481)
 -- Name: permisos permisos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -902,7 +1487,7 @@ ALTER TABLE ONLY public.permisos
 
 
 --
--- TOC entry 2781 (class 2606 OID 16483)
+-- TOC entry 2816 (class 2606 OID 16483)
 -- Name: producto producto_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -911,7 +1496,7 @@ ALTER TABLE ONLY public.producto
 
 
 --
--- TOC entry 2783 (class 2606 OID 16485)
+-- TOC entry 2818 (class 2606 OID 16485)
 -- Name: sucursal sucursal_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -920,7 +1505,7 @@ ALTER TABLE ONLY public.sucursal
 
 
 --
--- TOC entry 2785 (class 2606 OID 16487)
+-- TOC entry 2820 (class 2606 OID 16487)
 -- Name: tipo_comprobante tipo_comprobante_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -929,7 +1514,7 @@ ALTER TABLE ONLY public.tipo_comprobante
 
 
 --
--- TOC entry 2787 (class 2606 OID 16489)
+-- TOC entry 2822 (class 2606 OID 16489)
 -- Name: tipo_impuestos tipo_impuestos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -938,7 +1523,7 @@ ALTER TABLE ONLY public.tipo_impuestos
 
 
 --
--- TOC entry 2789 (class 2606 OID 16491)
+-- TOC entry 2824 (class 2606 OID 16491)
 -- Name: tipo_producto tipo_producto_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -947,7 +1532,7 @@ ALTER TABLE ONLY public.tipo_producto
 
 
 --
--- TOC entry 2793 (class 2606 OID 16493)
+-- TOC entry 2828 (class 2606 OID 16493)
 -- Name: usuarios usuarios_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -956,7 +1541,7 @@ ALTER TABLE ONLY public.usuarios
 
 
 --
--- TOC entry 2799 (class 2606 OID 16495)
+-- TOC entry 2834 (class 2606 OID 16495)
 -- Name: venta_cabecera venta_cabecera_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -965,7 +1550,7 @@ ALTER TABLE ONLY public.venta_cabecera
 
 
 --
--- TOC entry 2803 (class 2606 OID 16497)
+-- TOC entry 2838 (class 2606 OID 16497)
 -- Name: venta_detalles venta_detalles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -974,7 +1559,7 @@ ALTER TABLE ONLY public.venta_detalles
 
 
 --
--- TOC entry 2765 (class 1259 OID 16498)
+-- TOC entry 2800 (class 1259 OID 16498)
 -- Name: fki_cod_ciudad_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -982,7 +1567,7 @@ CREATE INDEX fki_cod_ciudad_fk ON public.cliente USING btree (cod_ciudad);
 
 
 --
--- TOC entry 2794 (class 1259 OID 16499)
+-- TOC entry 2829 (class 1259 OID 16499)
 -- Name: fki_cod_cliente_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -990,7 +1575,7 @@ CREATE INDEX fki_cod_cliente_fk ON public.venta_cabecera USING btree (cod_client
 
 
 --
--- TOC entry 2777 (class 1259 OID 16500)
+-- TOC entry 2812 (class 1259 OID 16500)
 -- Name: fki_cod_impuesto_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -998,7 +1583,7 @@ CREATE INDEX fki_cod_impuesto_fk ON public.producto USING btree (cod_impuesto);
 
 
 --
--- TOC entry 2778 (class 1259 OID 16501)
+-- TOC entry 2813 (class 1259 OID 16501)
 -- Name: fki_cod_marca_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1006,7 +1591,7 @@ CREATE INDEX fki_cod_marca_fk ON public.producto USING btree (cod_marca);
 
 
 --
--- TOC entry 2800 (class 1259 OID 16502)
+-- TOC entry 2835 (class 1259 OID 16502)
 -- Name: fki_cod_producto_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1014,7 +1599,7 @@ CREATE INDEX fki_cod_producto_fk ON public.venta_detalles USING btree (cod_produ
 
 
 --
--- TOC entry 2790 (class 1259 OID 16503)
+-- TOC entry 2825 (class 1259 OID 16503)
 -- Name: fki_cod_suc_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1022,7 +1607,7 @@ CREATE INDEX fki_cod_suc_fk ON public.usuarios USING btree (cod_suc);
 
 
 --
--- TOC entry 2795 (class 1259 OID 16504)
+-- TOC entry 2830 (class 1259 OID 16504)
 -- Name: fki_cod_tipo_comprobante_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1030,7 +1615,7 @@ CREATE INDEX fki_cod_tipo_comprobante_fk ON public.venta_cabecera USING btree (c
 
 
 --
--- TOC entry 2796 (class 1259 OID 16505)
+-- TOC entry 2831 (class 1259 OID 16505)
 -- Name: fki_cod_tipo_impuestos_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1038,7 +1623,7 @@ CREATE INDEX fki_cod_tipo_impuestos_fk ON public.venta_cabecera USING btree (cod
 
 
 --
--- TOC entry 2779 (class 1259 OID 16506)
+-- TOC entry 2814 (class 1259 OID 16506)
 -- Name: fki_cod_tipo_producto_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1046,7 +1631,7 @@ CREATE INDEX fki_cod_tipo_producto_fk ON public.producto USING btree (cod_tipo_p
 
 
 --
--- TOC entry 2801 (class 1259 OID 16507)
+-- TOC entry 2836 (class 1259 OID 16507)
 -- Name: fki_cod_venta_cabecera_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1054,7 +1639,7 @@ CREATE INDEX fki_cod_venta_cabecera_fk ON public.venta_detalles USING btree (cod
 
 
 --
--- TOC entry 2770 (class 1259 OID 16508)
+-- TOC entry 2805 (class 1259 OID 16508)
 -- Name: fki_id_modulo_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1062,7 +1647,7 @@ CREATE INDEX fki_id_modulo_fk ON public.paginas USING btree (id_modulo);
 
 
 --
--- TOC entry 2791 (class 1259 OID 16509)
+-- TOC entry 2826 (class 1259 OID 16509)
 -- Name: fki_id_perfil_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1070,7 +1655,7 @@ CREATE INDEX fki_id_perfil_fk ON public.usuarios USING btree (id_perfil);
 
 
 --
--- TOC entry 2797 (class 1259 OID 16510)
+-- TOC entry 2832 (class 1259 OID 16510)
 -- Name: fki_usu_cod_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1078,7 +1663,7 @@ CREATE INDEX fki_usu_cod_fk ON public.venta_cabecera USING btree (usu_cod);
 
 
 --
--- TOC entry 2806 (class 2606 OID 16511)
+-- TOC entry 2841 (class 2606 OID 16511)
 -- Name: cliente cod_ciudad_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1087,7 +1672,7 @@ ALTER TABLE ONLY public.cliente
 
 
 --
--- TOC entry 2815 (class 2606 OID 16516)
+-- TOC entry 2850 (class 2606 OID 16516)
 -- Name: venta_cabecera cod_cliente_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1096,7 +1681,7 @@ ALTER TABLE ONLY public.venta_cabecera
 
 
 --
--- TOC entry 2809 (class 2606 OID 16521)
+-- TOC entry 2844 (class 2606 OID 16521)
 -- Name: producto cod_impuesto_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1105,7 +1690,7 @@ ALTER TABLE ONLY public.producto
 
 
 --
--- TOC entry 2810 (class 2606 OID 16526)
+-- TOC entry 2845 (class 2606 OID 16526)
 -- Name: producto cod_marca_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1114,7 +1699,7 @@ ALTER TABLE ONLY public.producto
 
 
 --
--- TOC entry 2819 (class 2606 OID 16531)
+-- TOC entry 2854 (class 2606 OID 16531)
 -- Name: venta_detalles cod_producto_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1123,7 +1708,7 @@ ALTER TABLE ONLY public.venta_detalles
 
 
 --
--- TOC entry 2813 (class 2606 OID 16536)
+-- TOC entry 2848 (class 2606 OID 16536)
 -- Name: usuarios cod_suc_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1132,7 +1717,7 @@ ALTER TABLE ONLY public.usuarios
 
 
 --
--- TOC entry 2816 (class 2606 OID 16541)
+-- TOC entry 2851 (class 2606 OID 16541)
 -- Name: venta_cabecera cod_tipo_comprobante_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1141,7 +1726,7 @@ ALTER TABLE ONLY public.venta_cabecera
 
 
 --
--- TOC entry 2811 (class 2606 OID 16546)
+-- TOC entry 2846 (class 2606 OID 16546)
 -- Name: producto cod_tipo_impuesto_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1150,7 +1735,7 @@ ALTER TABLE ONLY public.producto
 
 
 --
--- TOC entry 2817 (class 2606 OID 16551)
+-- TOC entry 2852 (class 2606 OID 16551)
 -- Name: venta_cabecera cod_tipo_impuestos_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1159,7 +1744,7 @@ ALTER TABLE ONLY public.venta_cabecera
 
 
 --
--- TOC entry 2812 (class 2606 OID 16556)
+-- TOC entry 2847 (class 2606 OID 16556)
 -- Name: producto cod_tipo_producto_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1168,7 +1753,7 @@ ALTER TABLE ONLY public.producto
 
 
 --
--- TOC entry 2820 (class 2606 OID 16561)
+-- TOC entry 2855 (class 2606 OID 16561)
 -- Name: venta_detalles cod_venta_cabecera_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1177,7 +1762,7 @@ ALTER TABLE ONLY public.venta_detalles
 
 
 --
--- TOC entry 2807 (class 2606 OID 16566)
+-- TOC entry 2842 (class 2606 OID 16566)
 -- Name: paginas id_modulo_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1186,7 +1771,7 @@ ALTER TABLE ONLY public.paginas
 
 
 --
--- TOC entry 2814 (class 2606 OID 16571)
+-- TOC entry 2849 (class 2606 OID 16571)
 -- Name: usuarios id_perfil_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1195,7 +1780,7 @@ ALTER TABLE ONLY public.usuarios
 
 
 --
--- TOC entry 2808 (class 2606 OID 16576)
+-- TOC entry 2843 (class 2606 OID 16576)
 -- Name: permisos permisos_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1204,7 +1789,7 @@ ALTER TABLE ONLY public.permisos
 
 
 --
--- TOC entry 2818 (class 2606 OID 16581)
+-- TOC entry 2853 (class 2606 OID 16581)
 -- Name: venta_cabecera usu_cod_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1212,7 +1797,7 @@ ALTER TABLE ONLY public.venta_cabecera
     ADD CONSTRAINT usu_cod_fk FOREIGN KEY (usu_cod) REFERENCES public.usuarios(usu_cod);
 
 
--- Completed on 2019-06-11 19:59:22
+-- Completed on 2019-06-29 20:48:40
 
 --
 -- PostgreSQL database dump complete
