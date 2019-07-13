@@ -20,9 +20,9 @@
             <div id="page-wrapper">
                 <div class="row">
                     <div class="col-lg-12">
-                        <h3 class="page-header">Registar Compra 
+                        <h3 class="page-header">Registar Venta
 
-                            <a href="compra_index.php" 
+                            <a href="venta_index.php" 
                                class="btn btn-primary btn-circle pull-right" 
                                rel='tooltip' title="Atras">
                                 <i class="glyphicon glyphicon-arrow-left"></i>
@@ -37,20 +37,21 @@
                     <div class="row">
                         <div class="col-lg-12">                                         
                             <div class="panel-body">
-                                <form action="compra_control.php" method="post" role="form" class="form-horizontal">
+                                <form action="venta_control.php" method="post" role="form" class="form-horizontal">
                                     <input type="hidden" name="accion" value="1">
-                                    <input type="hidden" name="vcodcom" value="0">
+                                    <input type="hidden" name="vcodven" value="0">
                                     <input type="hidden" name="vtotal_factura" value="0">
+									  <input type="hidden" name="vnum" value="0">
 									    <input type="hidden" name="viva10" value="0">
 										    <input type="hidden" name="viva5" value="0">
 											    <input type="hidden" name="vexenta" value="0">
                                     <input type="hidden" name="vestado" value="1">
                                     <input type="hidden" name="vusucod" 
                                            value="<?php echo $_SESSION['usu_cod']; ?>">
-                                    <input type="hidden" name="pagina" value="compra_index.php">  
+                                    <input type="hidden" name="pagina" value="venta_index.php">  
 
                                     <div class="form-group">
-                                        <label class="col-md-2 control-label">Fecha de Carga:</label>
+                                        <label class="col-md-2 control-label">Fecha :</label>
                                         <div class="col-md-2">
                                             <input type="date" required="" 
                                                    placeholder="Especifique fecha"  
@@ -59,123 +60,65 @@
                                                    name="vfecha" readonly="">
                                         </div>
                                     </div>
-									
-									   <div class="form-group">
-                                        <label class="col-md-2 control-label">Fecha de Comprobante:</label>
-                                        <div class="col-md-2">
-                                            <input type="date" required="" 
-                                                   placeholder="Especifique fecha"  
-                                                   class="form-control" 
-                                                   value="<?php echo date("Y-m-d") ?>" 
-                                                   name="vfechafactura" >
-                                        </div>
-                                    </div>
+																	
                                     <div class="form-group">
-                                        <label class="col-md-2 control-label">Proveedor:</label>
-                                        <div class="col-md-4">
-                                            <?php
-                                            $proveedores = consultas::get_datos("select * "
-                                                            . "from v_proveedor");
-                                            ?>                                 
-                                            <select name="vproveedor" class="form-control select2">
-                                                <?php
-                                                if (!empty($proveedores)) {
-                                                    foreach ($proveedores as $proveedor) {
-                                                        ?>
-                                                        <option value=
-                                                                "<?php echo $proveedor['id_proveedor']; ?>">
-                                                            <?php echo $proveedor['proveedores']; ?></option>
-                                                        <?php
-                                                    }
-                                                } else {
-                                                    ?>
-                                                    <option value="0">Debe insertar un Proveedor</option>
-                                                <?php } ?>
-                                            </select>
-                                        </div>
-                                    </div> 
-									
-									
-									 <div class="form-group">
-                                        <label class="col-md-2 control-label">Condicion:</label>
-                                        <div class="col-md-4">
-                                            <?php
-                                            $condiciones = consultas::get_datos("select * "
-                                                            . "from condicion");
-                                            ?>                                 
-                                            <select name="vcondicion" class="form-control select2">
-                                                <?php
-                                                if (!empty($condiciones)) {
-                                                    foreach ($condiciones as $condicion) {
-                                                        ?>
-                                                        <option value=
-                                                                "<?php echo $condicion['idcondicion']; ?>">
-                                                            <?php echo $condicion['desc_condicion']; ?></option>
-                                                        <?php
-                                                    }
-                                                } else {
-                                                    ?>
-                                                    <option value="0">Debe insertar una Condicion de Compra </option>
-                                                <?php } ?>
-                                            </select>
-                                        </div>
-                                    </div> 
-									
-									
-								
-                                    <div class="form-group">
-                                        <label class="col-md-2 control-label">Numero Factura Compra:</label>
+                                        <label class="col-md-2 control-label">Numero Factura:</label>
                                         <div class="col-md-2">
                                             <input type="text" class="form-control" name="vnro_factura" 
-                                                   required="" autofocus="">
+                                                   required="" autofocus=""  readonly=""  value="12">
                                         </div>
                                     </div>
+									  
                                     <div class="form-group">
-                                    <label class="col-md-2 control-label">Nro Pedido:</label>                               
-                                    <div class="col-md-4">
-                                        <?php $pedidos = consultas::get_datos("select * "
-                                                . "from v_pedido where estado != 'ANULADO'"); ?>                                 
-                                        <select name="vpedido" class="form-control select2">
+                                        <label class="col-md-2 control-label">Cliente:</label>
+                                        <div class="col-md-4">
                                             <?php
-                                            if (!empty($pedidos)) {
-                                                echo '<option value="0">Seleccione Pedido</option>';
-                                                foreach ($pedidos as $pedido) {
+                                            $clientes = consultas::get_datos("select * "
+                                                            . "from v_cliente");
+                                            ?>                                 
+                                            <select name="vcliente" class="form-control select2">
+                                                <?php
+                                                if (!empty($clientes)) {
+                                                    foreach ($clientes as $cliente) {
+                                                        ?>
+                                                        <option value=
+                                                                "<?php echo $cliente['cod_cliente']; ?>">
+                                                            <?php echo $cliente['apellido'].$cliente['nombre']; ?></option>
+                                                        <?php
+                                                    }
+                                                } else {
                                                     ?>
-                                                    <option value="<?php echo $pedido['idpedido']; ?>">
-                                                        <?php echo "Nro Pedido: ".$pedido['idpedido']." - "." Proveedor: ". $pedido['proveedor']; ?></option>
+                                                    <option value="0">Debe insertar un Cliente</option>
+                                                <?php } ?>
+                                            </select>
+                                        </div>
+                                    </div> 
+									
+								
+									
+                                    <div class="form-group">
+                                    <label class="col-md-2 control-label">Nro Presupuesto:</label>                               
+                                    <div class="col-md-4">
+                                        <?php $presupuestos = consultas::get_datos("select * "
+                                                . "from v_presupuesto where desc_estado != 'ANULADO'"); ?>                                 
+                                        <select name="vpresupuesto" class="form-control select2">
+                                            <?php
+                                            if (!empty($presupuestos)) {
+                                                echo '<option value="0">Seleccione Presupuesto</option>';
+                                                foreach ($presupuestos as $presupuesto) {
+                                                    ?>
+                                                    <option value="<?php echo $presupuesto['codpresupuesto']; ?>">
+                                                        <?php echo "Nro Presupuesto: ".$presupuesto['codpresupuesto']." - "." Cliente: ". $presupuesto['cliente']; ?></option>
                                                     <?php
                                                 }
                                             } else {
                                                 ?>
-                                                <option value="0">Debe insertar un Pedido</option>
+                                                <option value="0">Debe insertar un Presupuesto</option>
                                             <?php } ?>
                                         </select>
                                     </div>
                                 </div>  
-                                     <div class="form-group">
-                                        <label class="col-md-2 control-label">Tipo Comprobante:</label>
-                                        <div class="col-md-4">
-                                            <?php
-                                            $tipocomprobantes = consultas::get_datos("select * "
-                                                            . "from tipocomprobante");
-                                            ?>                                 
-                                            <select name="vtipocomprobante" class="form-control select2">
-                                                <?php
-                                                if (!empty($tipocomprobantes)) {
-                                                    foreach ($tipocomprobantes as $tipocomprobante) {
-                                                        ?>
-                                                        <option value=
-                                                                "<?php echo $tipocomprobante['idtipocomprobante']; ?>">
-                                                            <?php echo $tipocomprobante['desc_tipocomprobante']; ?></option>
-                                                        <?php
-                                                    }
-                                                } else {
-                                                    ?>
-                                                    <option value="0">Debe insertar un Tipo de Comprobante</option>
-                                                <?php } ?>
-                                            </select>
-                                        </div>
-                                    </div> 
+
                                     <br>
                                     <div class="form-group">
                                         <div class="col-md-offset-2 col-md-10">

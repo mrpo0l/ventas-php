@@ -20,8 +20,8 @@
             <div id="page-wrapper">
                 <div class="row">
                     <div class="col-lg-12">
-                        <h3 class="page-header">Listado de Compra
-                            <a href="compra_agregar.php" class="btn btn-primary btn-circle pull-right">
+                        <h3 class="page-header">Listado de Venta
+                            <a href="venta_agregar.php" class="btn btn-primary btn-circle pull-right">
                                 <i class="fa fa-plus" rel="tooltip" data-title="Registrar"></i>
                             </a>  
                         </h3>
@@ -50,9 +50,9 @@
                                 Datos
                             </div>
                             <?php
-                            $compra = consultas::get_datos("select * from v_compra 
-                                         order by idcompra asc");
-                            if (!empty($compra)) {
+                            $venta = consultas::get_datos("select * from v_ventas 
+                                         order by id_venta asc");
+                            if (!empty($venta)) {
                                 ?>                         
                                 <!--fin-->
                                 <div class="panel-body">
@@ -61,10 +61,10 @@
                                             <thead>
                                                 <tr>
                                                     <th class="text-center">#</th>
-                                                    <th class="text-center">PROVEEDOR</th>   
+                                                    <th class="text-center">CLIENTE</th>   
                                                     <th class="text-center">FECHA</th>   
                                                     <th class="text-center">MONTO</th>   
-                                                    <th class="text-center">COND VENTA</th>      
+                                                    
 													<th class="text-center">NRO FACTURA</th> 
                                                     <th class="text-center">USUARIO</th>
                                                     <th class="text-center">ESTADO</th>     
@@ -72,32 +72,34 @@
                                                 </tr>
                                             </thead>
                                             <tbody class="buscar">
-                                                <?php foreach ($compra as $compra) { ?> 
+                                                <?php foreach ($venta as $venta) { ?> 
                                                     <tr>
-                                                        <td class="text-center"><?php echo $compra['idcompra']; ?></td>
-                                                        <td class="text-center"><?php echo $compra['proveedor']; ?></td>
-                                                        <td class="text-center"><?php echo $compra['fechafactura']; ?></td>
-                                                        <td class="text-center"><?php echo $compra['total_factura_compra']; ?></td>
-                                                        <td class="text-center"><?php echo $compra['desc_condicion']; ?></td>
-														<td class="text-center"><?php echo $compra['nro_factura']; ?></td>
-                                                        <td class="text-center"><?php echo $compra['usu_nombres']; ?></td>  
-                                                        <td class="text-center"><?php echo $compra['desc_estado']; ?></td>  
-                                                        <td class="text-center">  
-                                                           <?php if($compra['desc_estado'] == 'ANULADO'){ ?> 
-                                                           <?php }else{ ?>
-                                                            <a href="detcompra_agregar.php?vcod=<?php echo 
-                                                            $compra['idcompra']; ?>" 
+                                                        <td class="text-center"><?php echo $venta['id_venta']; ?></td>
+                                                        <td class="text-center"><?php echo $venta['cliente']; ?></td>
+                                                        <td class="text-center"><?php echo $venta['fecha']; ?></td>
+                                                        <td class="text-center"><?php echo number_format($venta['ven_total'], 0, ',', '.'); ?></td>
+                                                    
+							<td class="text-center"><?php echo $venta['factura']; ?></td>
+                                                        <td class="text-center"><?php echo $venta['usu_nombres']; ?></td>  
+                                                        <td class="text-center"><?php echo $venta['ven_estado']; ?></td>  
+                                                        <td class="text-center">    
+                                                            <?php if($venta['ven_estado'] != "ANULADO"){ ?>
+                                                             <a 
+                                                               href="detventas_agregar.php?vcod=<?php echo $venta['id_venta']; ?>" 
                                                                class="btn btn-xs btn-success" rel='tooltip' 
                                                                data-title="Detalles">
-                                                                <span class="glyphicon glyphicon-th-list"></span></a>
-                                                               <a onclick="borrar(<?php echo "'".$compra['idcompra']."_".$compra['proveedor']."'" ?>)"                           
+                                                                <span class="glyphicon glyphicon-th-list"></span></a>	
+                                                            <?php }?>
+                                                            <a href="imprimir_factura.php?vcod=<?php echo $venta['id_venta']; ?>" 
+                                                               target="_blank" 
+                                                               class="btn btn-xs btn-primary" 
+                                                               rel='tooltip' data-title="Imprimir">
+                                                                <span class="glyphicon glyphicon-print"></span></a>
+                                                               <a onclick="borrar(<?php echo "'".$venta['id_venta']."_".$venta['cliente']."'" ?>)"                           
                                                                class="btn btn-xs btn-danger" rel='tooltip' data-title="Anular"
                                                                data-toggle="modal"
                                                                data-target="#delete">
                                                                 <span class="glyphicon glyphicon-ban-circle"></span></a>
-															   
-                                                             
-                                                           <?php } ?>
                                                         </td>
                                                     </tr>
                                                 <?php } ?>
@@ -144,7 +146,7 @@
           <script>
                 function borrar(datos) {
                     var dat = datos.split("_");
-                    $('#si').attr('href', 'compra_control.php?accion=2'+
+                    $('#si').attr('href', 'venta_control.php?accion=2'+
                             '&vcod=' + dat[0] +
                             '&vusu=null' +
                             '&vcli=null' +
@@ -154,7 +156,7 @@
                             '&vcancuo=0' +
 							'&vnro_factura=0' +
 							'&vfecha=1900-01-01' +
-                            '&pagina=compra_index.php');
+                            '&pagina=venta_index.php');
                     $('#confirmacion').html('<span class="glyphicon glyphicon-warning-sign"></span> Desea Borrar la Compra <i><strong> ' + dat[0] + '</strong></i>?');
                 }
             </script>
