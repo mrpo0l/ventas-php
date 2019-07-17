@@ -7,10 +7,10 @@ session_start();
 
 $sql = "SELECT sp_venta(".$_REQUEST['accion'].",".
         $_REQUEST['vcodven'].",".
-        $_REQUEST['vnum'].",".
-		 $_REQUEST['vpresupuesto'].",".
-        $_REQUEST['vcliente'].",".
+        //$_REQUEST['vnum'].",".
 	$_REQUEST['vusucod'].",".
+        $_REQUEST['vcliente'].",".
+	//$_REQUEST['vusucod'].",".
   
         $_REQUEST['vnro_factura'].",'".
         $_REQUEST['vfecha']."',".
@@ -36,3 +36,16 @@ if ($resultado[0]['venta'] == null) {
 }
 ?>
 
+
+?ban, 
+?codven, 
+?num, 
+?usucod, 
+?cliente, 
+?nro_factura, 
+?fecha, 
+?iva10,
+?iva5,
+?exenta,
+?total_factura,
+?estado
