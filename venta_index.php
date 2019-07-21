@@ -141,21 +141,20 @@
             <!--fin-->
             <!--archivos js-->   
             <?php require 'menu/js.ctp'; ?>
-
-
           <script>
                 function borrar(datos) {
                     var dat = datos.split("_");
                     $('#si').attr('href', 'venta_control.php?accion=2'+
-                            '&vcod=' + dat[0] +
-                            '&vusu=null' +
-                            '&vcli=null' +
+                            '&vcodven=' + dat[0] +
+                            '&vusucod=null' +
+                            '&vcliente=null' +
+                            '&vfecha=1900-01-01' +
+							'&viva10=0' +
+                            '&viva5=0' +
+                            '&vexenta=0' +
+							'&vtotal_factura=0' +
+							'&vestado=2' +
                             '&vcondicion=null' +
-							'&vtotal=0' +
-                            '&vestado=ANULADO' +
-                            '&vcancuo=0' +
-							'&vnro_factura=0' +
-							'&vfecha=1900-01-01' +
                             '&pagina=venta_index.php');
                     $('#confirmacion').html('<span class="glyphicon glyphicon-warning-sign"></span> Desea Borrar la Compra <i><strong> ' + dat[0] + '</strong></i>?');
                 }

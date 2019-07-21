@@ -61,13 +61,13 @@
                                         </div>
                                     </div>
 																	
-                                    <div class="form-group">
+                                    <!-- <div class="form-group">
                                         <label class="col-md-2 control-label">Numero Factura:</label>
                                         <div class="col-md-2">
                                             <input type="text" class="form-control" name="vnro_factura" 
-                                                   required="" autofocus=""  readonly=""  value="12">
+                                                   required="" autofocus=""  readonly=""  value="">
                                         </div>
-                                    </div>
+                                    </div> -->
 									  
                                     <div class="form-group">
                                         <label class="col-md-2 control-label">Cliente:</label>
@@ -95,29 +95,29 @@
                                     </div> 
 									
 								
-									
-                                    <div class="form-group">
-                                    <label class="col-md-2 control-label">Nro Presupuesto:</label>                               
+									<div class="form-group">
+                                    <label class="col-md-2 control-label">Forma de Pago:</label>                               
                                     <div class="col-md-4">
-                                        <?php $presupuestos = consultas::get_datos("select * "
-                                                . "from v_presupuesto where desc_estado != 'ANULADO'"); ?>                                 
-                                        <select name="vpresupuesto" class="form-control select2">
+                                        <?php $condiciones = consultas::get_datos("select * "
+                                                . "from condicion"); ?>                                 
+                                        <select name="vcondicion" class="form-control select2">
                                             <?php
-                                            if (!empty($presupuestos)) {
-                                                echo '<option value="0">Seleccione Presupuesto</option>';
-                                                foreach ($presupuestos as $presupuesto) {
+                                            if (!empty($condiciones)) {
+                                                echo '<option value="0">Seleccione Pago</option>';
+                                                foreach ($condiciones as $condicion) {
                                                     ?>
-                                                    <option value="<?php echo $presupuesto['codpresupuesto']; ?>">
-                                                        <?php echo "Nro Presupuesto: ".$presupuesto['codpresupuesto']." - "." Cliente: ". $presupuesto['cliente']; ?></option>
+                                                    <option value="<?php echo $condicion['idcondicion']; ?>">
+                                                        <?php echo $condicion['desc_condicion']; ?></option>
                                                     <?php
                                                 }
                                             } else {
                                                 ?>
-                                                <option value="0">Debe insertar un Presupuesto</option>
+                                                <option value="0">Debe insertar una forma de pago</option>
                                             <?php } ?>
                                         </select>
                                     </div>
                                 </div>  
+                                   
 
                                     <br>
                                     <div class="form-group">

@@ -7,20 +7,15 @@ session_start();
 
 $sql = "SELECT sp_venta(".$_REQUEST['accion'].",".
         $_REQUEST['vcodven'].",".
-        //$_REQUEST['vnum'].",".
 	$_REQUEST['vusucod'].",".
-        $_REQUEST['vcliente'].",".
-	//$_REQUEST['vusucod'].",".
-  
-        $_REQUEST['vnro_factura'].",'".
+        $_REQUEST['vcliente'].",'".
         $_REQUEST['vfecha']."',".
 	$_REQUEST['viva10'].",".
 	$_REQUEST['viva5'].",".
 	$_REQUEST['vexenta'].",".
 	$_REQUEST['vtotal_factura'].",".
-
-
-        $_REQUEST['vestado'].") as venta;";
+        $_REQUEST['vestado'].",".
+        $_REQUEST['vcondicion'].") as venta;";
  
 	   
 $resultado = consultas::get_datos($sql);
