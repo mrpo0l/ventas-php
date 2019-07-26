@@ -30,17 +30,3 @@ if ($resultado[0]['venta'] == null) {
     header('location:./'.$_REQUEST['pagina']);
 }
 ?>
-
-
-?ban, 
-?codven, 
-?num, 
-?usucod, 
-?cliente, 
-?nro_factura, 
-?fecha, 
-?iva10,
-?iva5,
-?exenta,
-?total_factura,
-?estado

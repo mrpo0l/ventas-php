@@ -64,7 +64,7 @@
 
                                  <div class="form-group">
                                     <label class="col-md-2 control-label">Tipo de Producto</label>
-                                    <?php $tipo_productos = consultas::get_datos("select * from v_tipo_producto order by desc_tipo_producto"); ?>
+                                    <?php $tipo_productos = consultas::get_datos("select * from tipo_producto order by nombre"); ?>
                                     <div class="col-md-3">
                                         <select name="cod_tipo_producto" class="form-control select2" >
                                             <?php
@@ -72,7 +72,7 @@
                                                 foreach ($tipo_productos as $tipo_producto) {
                                                     ?>
                                                     <option value="<?php echo $tipo_producto['cod_tipo_producto']; ?>">
-                                                        <?php echo $tipo_producto['desc_tipo_producto']; ?></option>
+                                                        <?php echo $tipo_producto['nombre']; ?></option>
                                                     <?php
                                                 }
                                             } else {

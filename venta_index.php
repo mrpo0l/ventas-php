@@ -156,7 +156,7 @@
 							'&vestado=2' +
                             '&vcondicion=null' +
                             '&pagina=venta_index.php');
-                    $('#confirmacion').html('<span class="glyphicon glyphicon-warning-sign"></span> Desea Borrar la Compra <i><strong> ' + dat[0] + '</strong></i>?');
+                    $('#confirmacion').html('<span class="glyphicon glyphicon-warning-sign"></span> Desea Anular la Compra <i><strong> ' + dat[0] + '</strong></i>?');
                 }
             </script>
 

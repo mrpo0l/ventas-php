@@ -12,8 +12,8 @@ $sql = "SELECT sp_producto("
         . $_REQUEST['cod_tipo_producto'] . "," 
         . $_REQUEST['cod_tipo_impuesto'] . "," 
         . $_REQUEST['cod_marca'] . "," 
-        . $_REQUEST['stock'] . "," 
-		. $_REQUEST['precio'] . 
+        . $_REQUEST['precio'] . "," 
+		. $_REQUEST['stock'] . 
         ") as producto;";
 $resultado = consultas::get_datos($sql);
 
