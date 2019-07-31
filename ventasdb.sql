@@ -5,7 +5,7 @@
 -- Dumped from database version 10.8
 -- Dumped by pg_dump version 11.1
 
--- Started on 2019-07-25 20:45:57
+-- Started on 2019-07-30 20:49:40
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -18,7 +18,7 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- TOC entry 254 (class 1255 OID 25786)
+-- TOC entry 261 (class 1255 OID 25786)
 -- Name: funcion_actualiza_total(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -48,7 +48,37 @@ $$;
 ALTER FUNCTION public.funcion_actualiza_total() OWNER TO postgres;
 
 --
--- TOC entry 252 (class 1255 OID 33951)
+-- TOC entry 257 (class 1255 OID 34014)
+-- Name: funcion_actualiza_total_compra(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.funcion_actualiza_total_compra() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+    BEGIN
+	IF (TG_OP = 'INSERT') THEN
+		update compra
+		set total_factura_compra = (select coalesce(sum(det_subtotal),0) from det_compra where id_compra=new.id_compra)
+		where  idcompra = new.id_compra;
+		return new;     
+	END IF;
+	
+	IF (TG_OP = 'DELETE') THEN
+		update compra
+		set total_factura_compra = (select coalesce(sum(det_subtotal),0) from det_compra where id_compra=old.id_compra)
+		where  idcompra = old.id_compra;
+		return new;     
+	END IF;
+
+        RETURN NULL;
+    END;
+$$;
+
+
+ALTER FUNCTION public.funcion_actualiza_total_compra() OWNER TO postgres;
+
+--
+-- TOC entry 256 (class 1255 OID 33951)
 -- Name: numero_letras(numeric); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -174,7 +204,7 @@ $$;
 ALTER FUNCTION public.numero_letras(numero numeric) OWNER TO postgres;
 
 --
--- TOC entry 246 (class 1255 OID 16394)
+-- TOC entry 250 (class 1255 OID 16394)
 -- Name: sp_ciudad(integer, integer, character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -234,7 +264,7 @@ $$;
 ALTER FUNCTION public.sp_ciudad(ban integer, vcod integer, pagina character varying) OWNER TO postgres;
 
 --
--- TOC entry 249 (class 1255 OID 24661)
+-- TOC entry 253 (class 1255 OID 24661)
 -- Name: sp_cliente(integer, integer, character varying, character varying, character varying, integer, character varying, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -306,7 +336,45 @@ $$;
 ALTER FUNCTION public.sp_cliente(ban integer, vcod integer, vnombre character varying, vfecha_nac character varying, vapellido character varying, vidciudad integer, vdireccion character varying, vedad integer, vdocumento integer) OWNER TO postgres;
 
 --
--- TOC entry 250 (class 1255 OID 24670)
+-- TOC entry 258 (class 1255 OID 34008)
+-- Name: sp_compra(integer, integer, integer, integer, date, integer, integer, integer, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_compra(ban integer, codven integer, usucod integer, cliente integer, fecha date, iva10 integer, iva5 integer, exenta integer, total_factura integer, estado integer, condicion integer) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $$
+declare mensaje varchar;
+repetido integer;
+
+begin
+
+case ban
+when 1 then
+
+
+    
+		INSERT INTO compra
+		VALUES ((select coalesce(max(idcompra),0)+1 from compra), usucod, cliente,  (select coalesce(max(nro_factura),0)+1 from compra), fecha, iva10, iva5, exenta, total_factura, 
+		 estado, condicion);
+	
+
+	mensaje = 'Guardado Exitosamente';
+
+when 2 then
+
+	update compra set idestado = estado where idcompra=codven;		
+	mensaje = 'Anulado Exitosamente';
+	
+end case;
+return mensaje;
+end;
+$$;
+
+
+ALTER FUNCTION public.sp_compra(ban integer, codven integer, usucod integer, cliente integer, fecha date, iva10 integer, iva5 integer, exenta integer, total_factura integer, estado integer, condicion integer) OWNER TO postgres;
+
+--
+-- TOC entry 254 (class 1255 OID 24670)
 -- Name: sp_departamentos(integer, integer, character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -368,7 +436,60 @@ $$;
 ALTER FUNCTION public.sp_departamentos(ban integer, vcod integer, vdescripcion character varying) OWNER TO postgres;
 
 --
--- TOC entry 260 (class 1255 OID 25745)
+-- TOC entry 259 (class 1255 OID 34013)
+-- Name: sp_detcompras(integer, integer, integer, integer, numeric, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.sp_detcompras(ban integer, codven integer, codarti integer, coddepo integer, preciounit numeric, cantidad integer, subtotal integer) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $$
+declare mensaje varchar;
+repetido integer;
+iva integer;
+porexe float;
+poriva5 float;
+poriva10 float;
+begin
+
+case ban
+when 1 then
+
+	select id_compra into repetido from det_compra where id_articulo = codarti and cod_depo=coddepo and id_compra=codven;
+
+		if found then
+		
+			mensaje = 'El articulo ya se encuentra agregado en el detalle';
+		else
+			iva = (select b.porcentaje from producto a join tipo_impuestos b on b.cod_impuesto=a.cod_impuesto where a.cod_producto = codarti);
+			if iva = 10 then
+			   poriva10 = (preciounit * cantidad);
+			end if;
+			if iva = 5 then
+			   poriva5 = (preciounit * cantidad);
+			end if;
+			if iva = 0 then
+		           porexe = (preciounit * cantidad);
+		        end if;
+				
+			INSERT INTO det_compra
+			VALUES (codven,codarti,coddepo,preciounit,cantidad,subtotal,porexe,poriva5,poriva10);
+
+			mensaje = 'Guardado Exitosamente';
+		end if;
+when 3 then
+	delete from det_compra where id_articulo=codarti and cod_depo=coddepo and id_compra=codven;
+	mensaje = 'Borrado Exitosamente';
+	
+end case;
+return mensaje;
+end;
+$$;
+
+
+ALTER FUNCTION public.sp_detcompras(ban integer, codven integer, codarti integer, coddepo integer, preciounit numeric, cantidad integer, subtotal integer) OWNER TO postgres;
+
+--
+-- TOC entry 267 (class 1255 OID 25745)
 -- Name: sp_detventas(integer, integer, integer, integer, numeric, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -421,7 +542,7 @@ $$;
 ALTER FUNCTION public.sp_detventas(ban integer, codven integer, codarti integer, coddepo integer, preciounit numeric, cantidad integer, subtotal integer) OWNER TO postgres;
 
 --
--- TOC entry 253 (class 1255 OID 24684)
+-- TOC entry 260 (class 1255 OID 24684)
 -- Name: sp_marca(integer, integer, character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -483,7 +604,7 @@ $$;
 ALTER FUNCTION public.sp_marca(ban integer, vcod integer, vnombre character varying) OWNER TO postgres;
 
 --
--- TOC entry 255 (class 1255 OID 24702)
+-- TOC entry 262 (class 1255 OID 24702)
 -- Name: sp_producto(integer, integer, character varying, character varying, integer, integer, integer, numeric, numeric); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -560,7 +681,7 @@ $$;
 ALTER FUNCTION public.sp_producto(ban integer, vidproducto integer, vdesc_producto character varying, vestado character varying, vcod_tipo_producto integer, vcod_tipo_impuesto integer, vcod_marca integer, vprecio numeric, vstock numeric) OWNER TO postgres;
 
 --
--- TOC entry 256 (class 1255 OID 24732)
+-- TOC entry 263 (class 1255 OID 24732)
 -- Name: sp_sucursal(integer, integer, character varying, character varying, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -624,7 +745,7 @@ $$;
 ALTER FUNCTION public.sp_sucursal(ban integer, vcod integer, vnombre character varying, vdireccion character varying, vtelefono integer) OWNER TO postgres;
 
 --
--- TOC entry 247 (class 1255 OID 24605)
+-- TOC entry 251 (class 1255 OID 24605)
 -- Name: sp_tipo_comprobante(integer, integer, character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -689,7 +810,7 @@ $$;
 ALTER FUNCTION public.sp_tipo_comprobante(ban integer, vcod integer, nombre character varying) OWNER TO postgres;
 
 --
--- TOC entry 248 (class 1255 OID 24736)
+-- TOC entry 252 (class 1255 OID 24736)
 -- Name: sp_tipo_impuesto(integer, integer, character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -748,7 +869,7 @@ $$;
 ALTER FUNCTION public.sp_tipo_impuesto(ban integer, vcod integer, vnombre character varying) OWNER TO postgres;
 
 --
--- TOC entry 259 (class 1255 OID 24738)
+-- TOC entry 266 (class 1255 OID 24738)
 -- Name: sp_tipo_impuesto(integer, integer, character varying, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -809,7 +930,7 @@ $$;
 ALTER FUNCTION public.sp_tipo_impuesto(ban integer, vcod integer, vnombre character varying, vporcentaje integer) OWNER TO postgres;
 
 --
--- TOC entry 258 (class 1255 OID 24737)
+-- TOC entry 265 (class 1255 OID 24737)
 -- Name: sp_tipo_impuesto(integer, integer, character varying, character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -870,7 +991,7 @@ $$;
 ALTER FUNCTION public.sp_tipo_impuesto(ban integer, vcod integer, vnombre character varying, vporcentaje character varying) OWNER TO postgres;
 
 --
--- TOC entry 257 (class 1255 OID 24733)
+-- TOC entry 264 (class 1255 OID 24733)
 -- Name: sp_tipo_producto(integer, integer, character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -934,7 +1055,7 @@ $$;
 ALTER FUNCTION public.sp_tipo_producto(ban integer, vcod integer, vnombre character varying) OWNER TO postgres;
 
 --
--- TOC entry 251 (class 1255 OID 25770)
+-- TOC entry 255 (class 1255 OID 25770)
 -- Name: sp_venta(integer, integer, integer, integer, date, integer, integer, integer, integer, integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -1009,6 +1130,28 @@ CREATE TABLE public.cliente (
 ALTER TABLE public.cliente OWNER TO postgres;
 
 --
+-- TOC entry 234 (class 1259 OID 33952)
+-- Name: compra; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.compra (
+    idcompra integer NOT NULL,
+    cod_usu integer NOT NULL,
+    id_cliente integer NOT NULL,
+    nro_factura integer NOT NULL,
+    fecha date,
+    total_iva_10 integer NOT NULL,
+    total_iva_5 integer NOT NULL,
+    total_exenta integer NOT NULL,
+    total_factura_compra integer NOT NULL,
+    idestado integer,
+    ven_condicion integer
+);
+
+
+ALTER TABLE public.compra OWNER TO postgres;
+
+--
 -- TOC entry 232 (class 1259 OID 25755)
 -- Name: condicion; Type: TABLE; Schema: public; Owner: postgres
 --
@@ -1046,6 +1189,26 @@ CREATE TABLE public.deposito (
 
 
 ALTER TABLE public.deposito OWNER TO postgres;
+
+--
+-- TOC entry 235 (class 1259 OID 33987)
+-- Name: det_compra; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.det_compra (
+    id_compra integer NOT NULL,
+    id_articulo integer NOT NULL,
+    cod_depo integer NOT NULL,
+    det_precio_unit numeric(12,0) NOT NULL,
+    det_cantidad numeric(10,0) NOT NULL,
+    det_subtotal integer,
+    exenta integer,
+    iva5 integer,
+    iva10 integer
+);
+
+
+ALTER TABLE public.det_compra OWNER TO postgres;
 
 --
 -- TOC entry 229 (class 1259 OID 25717)
@@ -1350,6 +1513,64 @@ CREATE VIEW public.v_cliente AS
 ALTER TABLE public.v_cliente OWNER TO postgres;
 
 --
+-- TOC entry 236 (class 1259 OID 34003)
+-- Name: v_compras; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.v_compras AS
+ SELECT a.idcompra AS id_compra,
+    a.id_cliente,
+    a.fecha AS ven_fecha,
+    to_char((a.fecha)::timestamp with time zone, 'DD/MM/YYYY'::text) AS fecha,
+    to_char((a.fecha)::timestamp with time zone, 'TMDay, DD "de" TMMonth "del" yyyy'::text) AS fecdate,
+    ( SELECT estado.desc_estado
+           FROM public.estado
+          WHERE (estado.idestado = a.idestado)) AS ven_estado,
+    a.total_factura_compra AS ven_total,
+    a.cod_usu AS usu_cod,
+    (((b.nombre)::text || ' '::text) || (b.apellido)::text) AS cliente,
+    c.usu_nombres,
+    b.direccion AS cli_direccion,
+    b.documento AS cli_ci,
+    b.telefono AS cli_telefono,
+    ((((btrim(to_char(1, '000'::text)) || '-'::text) || btrim(to_char(1, '000'::text))) || '-'::text) || btrim(to_char(a.idcompra, '0000000'::text))) AS factura,
+    ( SELECT condicion.desc_condicion
+           FROM public.condicion
+          WHERE (condicion.idcondicion = a.ven_condicion)) AS ven_condicion
+   FROM public.compra a,
+    public.cliente b,
+    public.usuarios c
+  WHERE ((a.id_cliente = b.cod_cliente) AND (a.cod_usu = c.usu_cod));
+
+
+ALTER TABLE public.v_compras OWNER TO postgres;
+
+--
+-- TOC entry 237 (class 1259 OID 34009)
+-- Name: v_detcompras; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.v_detcompras AS
+ SELECT a.id_compra AS id_venta,
+    a.id_articulo,
+    a.cod_depo,
+    a.det_precio_unit,
+    a.det_cantidad,
+    b.nombre AS desc_producto,
+    c.dep_descrip,
+    a.det_subtotal,
+    a.exenta,
+    a.iva5,
+    a.iva10
+   FROM public.det_compra a,
+    public.producto b,
+    public.deposito c
+  WHERE ((a.id_articulo = b.cod_producto) AND (a.cod_depo = c.cod_depo));
+
+
+ALTER TABLE public.v_detcompras OWNER TO postgres;
+
+--
 -- TOC entry 230 (class 1259 OID 25732)
 -- Name: v_detventas; Type: VIEW; Schema: public; Owner: postgres
 --
@@ -1611,7 +1832,7 @@ CREATE VIEW public.vfecha AS
 ALTER TABLE public.vfecha OWNER TO postgres;
 
 --
--- TOC entry 3034 (class 0 OID 16396)
+-- TOC entry 3066 (class 0 OID 16396)
 -- Dependencies: 196
 -- Data for Name: ciudad; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1626,7 +1847,7 @@ INSERT INTO public.ciudad VALUES (9, 'San Lorenzo');
 
 
 --
--- TOC entry 3035 (class 0 OID 16399)
+-- TOC entry 3067 (class 0 OID 16399)
 -- Dependencies: 197
 -- Data for Name: cliente; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1637,7 +1858,17 @@ INSERT INTO public.cliente VALUES (3, 'Daft                                     
 
 
 --
--- TOC entry 3057 (class 0 OID 25755)
+-- TOC entry 3090 (class 0 OID 33952)
+-- Dependencies: 234
+-- Data for Name: compra; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.compra VALUES (1, 1, 3, 1, '2019-07-31', 0, 0, 0, 2000000, 2, 4);
+INSERT INTO public.compra VALUES (2, 1, 2, 2, '2019-07-31', 0, 0, 0, 4000000, 1, 5);
+
+
+--
+-- TOC entry 3089 (class 0 OID 25755)
 -- Dependencies: 232
 -- Data for Name: condicion; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1650,7 +1881,7 @@ INSERT INTO public.condicion VALUES (5, '1 Riñon');
 
 
 --
--- TOC entry 3048 (class 0 OID 24665)
+-- TOC entry 3080 (class 0 OID 24665)
 -- Dependencies: 216
 -- Data for Name: departamentos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1663,7 +1894,7 @@ INSERT INTO public.departamentos VALUES (3, 'Paraguari123');
 
 
 --
--- TOC entry 3054 (class 0 OID 25697)
+-- TOC entry 3086 (class 0 OID 25697)
 -- Dependencies: 227
 -- Data for Name: deposito; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1673,20 +1904,32 @@ INSERT INTO public.deposito VALUES (2, 'Deposito 2');
 
 
 --
--- TOC entry 3056 (class 0 OID 25717)
+-- TOC entry 3091 (class 0 OID 33987)
+-- Dependencies: 235
+-- Data for Name: det_compra; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.det_compra VALUES (1, 1, 1, 2000000, 1, 2000000, NULL, NULL, 2000000);
+INSERT INTO public.det_compra VALUES (2, 3, 1, 4000000, 1, 4000000, NULL, 4000000, NULL);
+
+
+--
+-- TOC entry 3088 (class 0 OID 25717)
 -- Dependencies: 229
 -- Data for Name: det_venta; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.det_venta VALUES (1, 1, 1, 2000000, 1, 2000000, NULL, NULL, 2000000);
-INSERT INTO public.det_venta VALUES (1, 2, 1, 5000000, 4, 20000000, NULL, NULL, 20000000);
 INSERT INTO public.det_venta VALUES (2, 1, 1, 2000000, 1, 2000000, NULL, NULL, 2000000);
 INSERT INTO public.det_venta VALUES (2, 2, 1, 5000000, 1, 5000000, NULL, NULL, 5000000);
 INSERT INTO public.det_venta VALUES (2, 4, 1, 6000000, 2, 12000000, NULL, 12000000, NULL);
+INSERT INTO public.det_venta VALUES (1, 2, 1, 5000000, 1, 5000000, NULL, NULL, 5000000);
+INSERT INTO public.det_venta VALUES (1, 4, 1, 6000000, 2, 12000000, NULL, 12000000, NULL);
+INSERT INTO public.det_venta VALUES (9, 3, 1, 4000000, 1, 4000000, NULL, 4000000, NULL);
+INSERT INTO public.det_venta VALUES (9, 2, 1, 5000000, 2, 10000000, NULL, NULL, 10000000);
 
 
 --
--- TOC entry 3051 (class 0 OID 25590)
+-- TOC entry 3083 (class 0 OID 25590)
 -- Dependencies: 223
 -- Data for Name: estado; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1696,7 +1939,7 @@ INSERT INTO public.estado VALUES (2, 'Anulado');
 
 
 --
--- TOC entry 3049 (class 0 OID 24678)
+-- TOC entry 3081 (class 0 OID 24678)
 -- Dependencies: 218
 -- Data for Name: existe; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1705,7 +1948,7 @@ INSERT INTO public.existe VALUES (2);
 
 
 --
--- TOC entry 3036 (class 0 OID 16402)
+-- TOC entry 3068 (class 0 OID 16402)
 -- Dependencies: 198
 -- Data for Name: marca; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1720,7 +1963,7 @@ INSERT INTO public.marca VALUES (7, 'Lenovo');
 
 
 --
--- TOC entry 3050 (class 0 OID 24681)
+-- TOC entry 3082 (class 0 OID 24681)
 -- Dependencies: 219
 -- Data for Name: marcasenuso; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1729,24 +1972,24 @@ INSERT INTO public.marcasenuso VALUES (2);
 
 
 --
--- TOC entry 3037 (class 0 OID 16405)
+-- TOC entry 3069 (class 0 OID 16405)
 -- Dependencies: 199
 -- Data for Name: modulo; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 INSERT INTO public.modulo VALUES (1, 'Parametros iniciales                              ');
 INSERT INTO public.modulo VALUES (2, 'Venta                                             ');
+INSERT INTO public.modulo VALUES (3, 'Compra                                            ');
 
 
 --
--- TOC entry 3038 (class 0 OID 16408)
+-- TOC entry 3070 (class 0 OID 16408)
 -- Dependencies: 200
 -- Data for Name: paginas; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 INSERT INTO public.paginas VALUES (1, 'ciudad_index.php', 'Ciudades', 1);
 INSERT INTO public.paginas VALUES (2, 'cliente_index.php', 'Clientes', 1);
-INSERT INTO public.paginas VALUES (3, 'venta_index.php', 'Ventas', 2);
 INSERT INTO public.paginas VALUES (4, 'tipo_comprobante_index.php', 'Tipos Comprobantes', 1);
 INSERT INTO public.paginas VALUES (5, 'departamentos_index.php', 'Departamentos', 1);
 INSERT INTO public.paginas VALUES (6, 'marca_index.php', 'Marcas', 1);
@@ -1754,10 +1997,12 @@ INSERT INTO public.paginas VALUES (7, 'producto_index.php', 'Productos', 1);
 INSERT INTO public.paginas VALUES (9, 'tipo_impuesto_index.php', 'Tpos Inpuestos', 1);
 INSERT INTO public.paginas VALUES (10, 'tipo_producto_index.php', 'Tipo Productos', 1);
 INSERT INTO public.paginas VALUES (8, 'sucursal_index.php', 'Sucursales', 1);
+INSERT INTO public.paginas VALUES (3, 'venta_index.php', 'Ventas', 2);
+INSERT INTO public.paginas VALUES (11, 'compra_index.php', 'Compras', 3);
 
 
 --
--- TOC entry 3039 (class 0 OID 16414)
+-- TOC entry 3071 (class 0 OID 16414)
 -- Dependencies: 201
 -- Data for Name: perfil; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1766,7 +2011,7 @@ INSERT INTO public.perfil VALUES (1, 'admin');
 
 
 --
--- TOC entry 3040 (class 0 OID 16417)
+-- TOC entry 3072 (class 0 OID 16417)
 -- Dependencies: 202
 -- Data for Name: permisos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1781,10 +2026,11 @@ INSERT INTO public.permisos VALUES (7, true, true, true, true, 1);
 INSERT INTO public.permisos VALUES (8, true, true, true, true, 1);
 INSERT INTO public.permisos VALUES (9, true, true, true, true, 1);
 INSERT INTO public.permisos VALUES (10, true, true, true, true, 1);
+INSERT INTO public.permisos VALUES (11, true, true, true, true, 1);
 
 
 --
--- TOC entry 3052 (class 0 OID 25597)
+-- TOC entry 3084 (class 0 OID 25597)
 -- Dependencies: 224
 -- Data for Name: presupuesto; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1793,7 +2039,7 @@ INSERT INTO public.presupuesto VALUES (1, '2019-07-13', 0, 0, 0, 0, 1, 1, 1);
 
 
 --
--- TOC entry 3041 (class 0 OID 16420)
+-- TOC entry 3073 (class 0 OID 16420)
 -- Dependencies: 203
 -- Data for Name: producto; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1805,7 +2051,7 @@ INSERT INTO public.producto VALUES (4, 'Lenovo ideapad 330                      
 
 
 --
--- TOC entry 3042 (class 0 OID 16423)
+-- TOC entry 3074 (class 0 OID 16423)
 -- Dependencies: 204
 -- Data for Name: repetido; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1814,7 +2060,7 @@ INSERT INTO public.repetido VALUES (1);
 
 
 --
--- TOC entry 3055 (class 0 OID 25702)
+-- TOC entry 3087 (class 0 OID 25702)
 -- Dependencies: 228
 -- Data for Name: stock; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1826,7 +2072,7 @@ INSERT INTO public.stock VALUES (4, 1, 12);
 
 
 --
--- TOC entry 3043 (class 0 OID 16426)
+-- TOC entry 3075 (class 0 OID 16426)
 -- Dependencies: 205
 -- Data for Name: sucursal; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1838,7 +2084,7 @@ Paraguay
 
 
 --
--- TOC entry 3044 (class 0 OID 16429)
+-- TOC entry 3076 (class 0 OID 16429)
 -- Dependencies: 206
 -- Data for Name: tipo_comprobante; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1848,7 +2094,7 @@ INSERT INTO public.tipo_comprobante VALUES (2, 'Ticket                        ')
 
 
 --
--- TOC entry 3045 (class 0 OID 16432)
+-- TOC entry 3077 (class 0 OID 16432)
 -- Dependencies: 207
 -- Data for Name: tipo_impuestos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1858,7 +2104,7 @@ INSERT INTO public.tipo_impuestos VALUES (1, 'Iva 5%', 5);
 
 
 --
--- TOC entry 3046 (class 0 OID 16435)
+-- TOC entry 3078 (class 0 OID 16435)
 -- Dependencies: 208
 -- Data for Name: tipo_producto; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1868,7 +2114,7 @@ INSERT INTO public.tipo_producto VALUES (1, 'celulares');
 
 
 --
--- TOC entry 3047 (class 0 OID 16438)
+-- TOC entry 3079 (class 0 OID 16438)
 -- Dependencies: 209
 -- Data for Name: usuarios; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1878,17 +2124,24 @@ INSERT INTO public.usuarios VALUES (1, 'juanda              ', 1, 'Juan Fretes
 
 
 --
--- TOC entry 3053 (class 0 OID 25644)
+-- TOC entry 3085 (class 0 OID 25644)
 -- Dependencies: 225
 -- Data for Name: venta; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.venta VALUES (1, 1, 1, 1, '2019-07-19', 0, 0, 0, 22000000, 2, 3);
 INSERT INTO public.venta VALUES (2, 1, 1, 2, '2019-07-26', 0, 0, 0, 19000000, 1, 1);
+INSERT INTO public.venta VALUES (3, 1, 1, 3, '2019-07-31', 0, 0, 0, 0, 1, 3);
+INSERT INTO public.venta VALUES (4, 1, 1, 4, '2019-07-31', 0, 0, 0, 0, 1, 3);
+INSERT INTO public.venta VALUES (5, 1, 1, 5, '2019-07-31', 0, 0, 0, 0, 1, 1);
+INSERT INTO public.venta VALUES (1, 1, 1, 1, '2019-07-19', 0, 0, 0, 17000000, 2, 3);
+INSERT INTO public.venta VALUES (8, 1, 3, 8, '2019-07-31', 0, 0, 0, 0, 2, 4);
+INSERT INTO public.venta VALUES (7, 1, 1, 7, '2019-07-31', 0, 0, 0, 0, 2, 3);
+INSERT INTO public.venta VALUES (6, 1, 1, 6, '2019-07-31', 0, 0, 0, 0, 2, 2);
+INSERT INTO public.venta VALUES (9, 1, 3, 9, '2019-07-31', 0, 0, 0, 14000000, 1, 3);
 
 
 --
--- TOC entry 2833 (class 2606 OID 16469)
+-- TOC entry 2852 (class 2606 OID 16469)
 -- Name: ciudad ciudad_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1897,7 +2150,7 @@ ALTER TABLE ONLY public.ciudad
 
 
 --
--- TOC entry 2835 (class 2606 OID 16471)
+-- TOC entry 2854 (class 2606 OID 16471)
 -- Name: cliente cliente_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1906,7 +2159,7 @@ ALTER TABLE ONLY public.cliente
 
 
 --
--- TOC entry 2880 (class 2606 OID 25759)
+-- TOC entry 2899 (class 2606 OID 25759)
 -- Name: condicion condicion_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1915,7 +2168,7 @@ ALTER TABLE ONLY public.condicion
 
 
 --
--- TOC entry 2866 (class 2606 OID 24669)
+-- TOC entry 2885 (class 2606 OID 24669)
 -- Name: departamentos departamentos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1924,7 +2177,7 @@ ALTER TABLE ONLY public.departamentos
 
 
 --
--- TOC entry 2874 (class 2606 OID 25701)
+-- TOC entry 2893 (class 2606 OID 25701)
 -- Name: deposito deposito_pk; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1933,7 +2186,16 @@ ALTER TABLE ONLY public.deposito
 
 
 --
--- TOC entry 2878 (class 2606 OID 25721)
+-- TOC entry 2903 (class 2606 OID 33991)
+-- Name: det_compra det_compra_pk; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.det_compra
+    ADD CONSTRAINT det_compra_pk PRIMARY KEY (id_compra, id_articulo, cod_depo);
+
+
+--
+-- TOC entry 2897 (class 2606 OID 25721)
 -- Name: det_venta det_venta_pk; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1942,7 +2204,7 @@ ALTER TABLE ONLY public.det_venta
 
 
 --
--- TOC entry 2868 (class 2606 OID 25621)
+-- TOC entry 2887 (class 2606 OID 25621)
 -- Name: estado estado_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1951,7 +2213,7 @@ ALTER TABLE ONLY public.estado
 
 
 --
--- TOC entry 2838 (class 2606 OID 16473)
+-- TOC entry 2857 (class 2606 OID 16473)
 -- Name: marca marca_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1960,7 +2222,7 @@ ALTER TABLE ONLY public.marca
 
 
 --
--- TOC entry 2840 (class 2606 OID 16475)
+-- TOC entry 2859 (class 2606 OID 16475)
 -- Name: modulo modulo_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1969,7 +2231,7 @@ ALTER TABLE ONLY public.modulo
 
 
 --
--- TOC entry 2843 (class 2606 OID 16477)
+-- TOC entry 2862 (class 2606 OID 16477)
 -- Name: paginas paginas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1978,7 +2240,7 @@ ALTER TABLE ONLY public.paginas
 
 
 --
--- TOC entry 2845 (class 2606 OID 16479)
+-- TOC entry 2864 (class 2606 OID 16479)
 -- Name: perfil perfil_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1987,7 +2249,7 @@ ALTER TABLE ONLY public.perfil
 
 
 --
--- TOC entry 2847 (class 2606 OID 16481)
+-- TOC entry 2866 (class 2606 OID 16481)
 -- Name: permisos permisos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1996,7 +2258,16 @@ ALTER TABLE ONLY public.permisos
 
 
 --
--- TOC entry 2872 (class 2606 OID 25648)
+-- TOC entry 2901 (class 2606 OID 33956)
+-- Name: compra pf_compra; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.compra
+    ADD CONSTRAINT pf_compra PRIMARY KEY (idcompra);
+
+
+--
+-- TOC entry 2891 (class 2606 OID 25648)
 -- Name: venta pf_venta; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2005,7 +2276,7 @@ ALTER TABLE ONLY public.venta
 
 
 --
--- TOC entry 2870 (class 2606 OID 25643)
+-- TOC entry 2889 (class 2606 OID 25643)
 -- Name: presupuesto presupuesto_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2014,7 +2285,7 @@ ALTER TABLE ONLY public.presupuesto
 
 
 --
--- TOC entry 2852 (class 2606 OID 16483)
+-- TOC entry 2871 (class 2606 OID 16483)
 -- Name: producto producto_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2023,7 +2294,7 @@ ALTER TABLE ONLY public.producto
 
 
 --
--- TOC entry 2876 (class 2606 OID 25706)
+-- TOC entry 2895 (class 2606 OID 25706)
 -- Name: stock stock_pk; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2032,7 +2303,7 @@ ALTER TABLE ONLY public.stock
 
 
 --
--- TOC entry 2854 (class 2606 OID 16485)
+-- TOC entry 2873 (class 2606 OID 16485)
 -- Name: sucursal sucursal_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2041,7 +2312,7 @@ ALTER TABLE ONLY public.sucursal
 
 
 --
--- TOC entry 2856 (class 2606 OID 16487)
+-- TOC entry 2875 (class 2606 OID 16487)
 -- Name: tipo_comprobante tipo_comprobante_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2050,7 +2321,7 @@ ALTER TABLE ONLY public.tipo_comprobante
 
 
 --
--- TOC entry 2858 (class 2606 OID 16489)
+-- TOC entry 2877 (class 2606 OID 16489)
 -- Name: tipo_impuestos tipo_impuestos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2059,7 +2330,7 @@ ALTER TABLE ONLY public.tipo_impuestos
 
 
 --
--- TOC entry 2860 (class 2606 OID 16491)
+-- TOC entry 2879 (class 2606 OID 16491)
 -- Name: tipo_producto tipo_producto_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2068,7 +2339,7 @@ ALTER TABLE ONLY public.tipo_producto
 
 
 --
--- TOC entry 2864 (class 2606 OID 16493)
+-- TOC entry 2883 (class 2606 OID 16493)
 -- Name: usuarios usuarios_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2077,7 +2348,7 @@ ALTER TABLE ONLY public.usuarios
 
 
 --
--- TOC entry 2836 (class 1259 OID 16498)
+-- TOC entry 2855 (class 1259 OID 16498)
 -- Name: fki_cod_ciudad_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2085,7 +2356,7 @@ CREATE INDEX fki_cod_ciudad_fk ON public.cliente USING btree (cod_ciudad);
 
 
 --
--- TOC entry 2848 (class 1259 OID 16500)
+-- TOC entry 2867 (class 1259 OID 16500)
 -- Name: fki_cod_impuesto_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2093,7 +2364,7 @@ CREATE INDEX fki_cod_impuesto_fk ON public.producto USING btree (cod_impuesto);
 
 
 --
--- TOC entry 2849 (class 1259 OID 16501)
+-- TOC entry 2868 (class 1259 OID 16501)
 -- Name: fki_cod_marca_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2101,7 +2372,7 @@ CREATE INDEX fki_cod_marca_fk ON public.producto USING btree (cod_marca);
 
 
 --
--- TOC entry 2861 (class 1259 OID 16503)
+-- TOC entry 2880 (class 1259 OID 16503)
 -- Name: fki_cod_suc_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2109,7 +2380,7 @@ CREATE INDEX fki_cod_suc_fk ON public.usuarios USING btree (cod_suc);
 
 
 --
--- TOC entry 2850 (class 1259 OID 16506)
+-- TOC entry 2869 (class 1259 OID 16506)
 -- Name: fki_cod_tipo_producto_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2117,7 +2388,7 @@ CREATE INDEX fki_cod_tipo_producto_fk ON public.producto USING btree (cod_tipo_p
 
 
 --
--- TOC entry 2841 (class 1259 OID 16508)
+-- TOC entry 2860 (class 1259 OID 16508)
 -- Name: fki_id_modulo_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2125,7 +2396,7 @@ CREATE INDEX fki_id_modulo_fk ON public.paginas USING btree (id_modulo);
 
 
 --
--- TOC entry 2862 (class 1259 OID 16509)
+-- TOC entry 2881 (class 1259 OID 16509)
 -- Name: fki_id_perfil_fk; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2133,7 +2404,7 @@ CREATE INDEX fki_id_perfil_fk ON public.usuarios USING btree (id_perfil);
 
 
 --
--- TOC entry 2898 (class 2620 OID 25787)
+-- TOC entry 2927 (class 2620 OID 25787)
 -- Name: det_venta trg_actualiza_total; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -2141,7 +2412,15 @@ CREATE TRIGGER trg_actualiza_total AFTER INSERT OR DELETE OR UPDATE ON public.de
 
 
 --
--- TOC entry 2881 (class 2606 OID 16511)
+-- TOC entry 2928 (class 2620 OID 34015)
+-- Name: det_compra trg_actualiza_total_compra; Type: TRIGGER; Schema: public; Owner: postgres
+--
+
+CREATE TRIGGER trg_actualiza_total_compra AFTER INSERT OR DELETE OR UPDATE ON public.det_compra FOR EACH ROW EXECUTE PROCEDURE public.funcion_actualiza_total_compra();
+
+
+--
+-- TOC entry 2904 (class 2606 OID 16511)
 -- Name: cliente cod_ciudad_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2150,7 +2429,7 @@ ALTER TABLE ONLY public.cliente
 
 
 --
--- TOC entry 2884 (class 2606 OID 16521)
+-- TOC entry 2907 (class 2606 OID 16521)
 -- Name: producto cod_impuesto_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2159,7 +2438,7 @@ ALTER TABLE ONLY public.producto
 
 
 --
--- TOC entry 2885 (class 2606 OID 16526)
+-- TOC entry 2908 (class 2606 OID 16526)
 -- Name: producto cod_marca_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2168,7 +2447,7 @@ ALTER TABLE ONLY public.producto
 
 
 --
--- TOC entry 2888 (class 2606 OID 16536)
+-- TOC entry 2911 (class 2606 OID 16536)
 -- Name: usuarios cod_suc_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2177,7 +2456,7 @@ ALTER TABLE ONLY public.usuarios
 
 
 --
--- TOC entry 2886 (class 2606 OID 16546)
+-- TOC entry 2909 (class 2606 OID 16546)
 -- Name: producto cod_tipo_impuesto_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2186,7 +2465,7 @@ ALTER TABLE ONLY public.producto
 
 
 --
--- TOC entry 2887 (class 2606 OID 16556)
+-- TOC entry 2910 (class 2606 OID 16556)
 -- Name: producto cod_tipo_producto_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2195,7 +2474,7 @@ ALTER TABLE ONLY public.producto
 
 
 --
--- TOC entry 2893 (class 2606 OID 25765)
+-- TOC entry 2916 (class 2606 OID 25765)
 -- Name: venta condicion_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2204,7 +2483,16 @@ ALTER TABLE ONLY public.venta
 
 
 --
--- TOC entry 2894 (class 2606 OID 25707)
+-- TOC entry 2921 (class 2606 OID 33957)
+-- Name: compra condicion_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.compra
+    ADD CONSTRAINT condicion_fk FOREIGN KEY (ven_condicion) REFERENCES public.condicion(idcondicion);
+
+
+--
+-- TOC entry 2917 (class 2606 OID 25707)
 -- Name: stock deposito_stock_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2213,7 +2501,7 @@ ALTER TABLE ONLY public.stock
 
 
 --
--- TOC entry 2890 (class 2606 OID 25649)
+-- TOC entry 2913 (class 2606 OID 25649)
 -- Name: venta fk_cli; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2222,7 +2510,16 @@ ALTER TABLE ONLY public.venta
 
 
 --
--- TOC entry 2891 (class 2606 OID 25654)
+-- TOC entry 2922 (class 2606 OID 33962)
+-- Name: compra fk_cli; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.compra
+    ADD CONSTRAINT fk_cli FOREIGN KEY (id_cliente) REFERENCES public.cliente(cod_cliente);
+
+
+--
+-- TOC entry 2914 (class 2606 OID 25654)
 -- Name: venta fk_estados; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2231,7 +2528,16 @@ ALTER TABLE ONLY public.venta
 
 
 --
--- TOC entry 2892 (class 2606 OID 25669)
+-- TOC entry 2923 (class 2606 OID 33967)
+-- Name: compra fk_estados; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.compra
+    ADD CONSTRAINT fk_estados FOREIGN KEY (idestado) REFERENCES public.estado(idestado);
+
+
+--
+-- TOC entry 2915 (class 2606 OID 25669)
 -- Name: venta fk_usuarios; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2240,7 +2546,16 @@ ALTER TABLE ONLY public.venta
 
 
 --
--- TOC entry 2882 (class 2606 OID 16566)
+-- TOC entry 2924 (class 2606 OID 33972)
+-- Name: compra fk_usuarios; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.compra
+    ADD CONSTRAINT fk_usuarios FOREIGN KEY (cod_usu) REFERENCES public.usuarios(usu_cod);
+
+
+--
+-- TOC entry 2905 (class 2606 OID 16566)
 -- Name: paginas id_modulo_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2249,7 +2564,7 @@ ALTER TABLE ONLY public.paginas
 
 
 --
--- TOC entry 2889 (class 2606 OID 16571)
+-- TOC entry 2912 (class 2606 OID 16571)
 -- Name: usuarios id_perfil_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2258,7 +2573,7 @@ ALTER TABLE ONLY public.usuarios
 
 
 --
--- TOC entry 2883 (class 2606 OID 16576)
+-- TOC entry 2906 (class 2606 OID 16576)
 -- Name: permisos permisos_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2267,7 +2582,7 @@ ALTER TABLE ONLY public.permisos
 
 
 --
--- TOC entry 2896 (class 2606 OID 25722)
+-- TOC entry 2919 (class 2606 OID 25722)
 -- Name: det_venta stock_det_venta_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2276,7 +2591,16 @@ ALTER TABLE ONLY public.det_venta
 
 
 --
--- TOC entry 2895 (class 2606 OID 25712)
+-- TOC entry 2925 (class 2606 OID 33992)
+-- Name: det_compra stock_det_venta_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.det_compra
+    ADD CONSTRAINT stock_det_venta_fk FOREIGN KEY (id_articulo, cod_depo) REFERENCES public.stock(id_articulo, cod_depo);
+
+
+--
+-- TOC entry 2918 (class 2606 OID 25712)
 -- Name: stock stock_id_articulo_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2285,7 +2609,7 @@ ALTER TABLE ONLY public.stock
 
 
 --
--- TOC entry 2897 (class 2606 OID 33941)
+-- TOC entry 2920 (class 2606 OID 33941)
 -- Name: det_venta ventas_det_venta_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -2293,7 +2617,16 @@ ALTER TABLE ONLY public.det_venta
     ADD CONSTRAINT ventas_det_venta_fk FOREIGN KEY (id_venta) REFERENCES public.venta(idventa);
 
 
--- Completed on 2019-07-25 20:45:58
+--
+-- TOC entry 2926 (class 2606 OID 33997)
+-- Name: det_compra ventas_det_venta_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.det_compra
+    ADD CONSTRAINT ventas_det_venta_fk FOREIGN KEY (id_compra) REFERENCES public.compra(idcompra);
+
+
+-- Completed on 2019-07-30 20:49:42
 
 --
 -- PostgreSQL database dump complete
